@@ -9,11 +9,8 @@ const (
 	ReportableDuration
 )
 
-type Idable interface {
-	GetID() string
-}
-
 type Nameable interface {
+	GetID() string
 	GetName() string
 }
 
