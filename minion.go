@@ -58,7 +58,7 @@ func (m *Minion) Start() error {
 }
 
 func (m *Minion) run(workerID int, j *Job) {
-	head := fmt.Sprintf("worker=%d", workerID)
+	head := fmt.Sprintf("worker=%d name=%s", workerID, j.Name)
 
 	start := time.Now()
 	m.Log.Infof("%s: starting", head)
