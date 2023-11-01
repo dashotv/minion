@@ -9,22 +9,38 @@ import (
 
 type Minion struct {
 	Concurrency int
-	Queue       chan Runnable
+	Queue       chan Func
 	Cron        *cron.Cron
 	Log         Loggable
+	Reporter    func(ReportableType, int, *Minion) error
 }
+
+type Func func() error
+
+type ReportableType int
+
+const (
+	ReportableStart ReportableType = iota
+	ReportableFinish
+	ReportableError
+	ReportableDuration
+)
 
 func New(concurrency int) *Minion {
 	return &Minion{
 		Concurrency: concurrency,
 		Log:         &DefaultLogger{},
-		Queue:       make(chan Runnable, concurrency*concurrency),
+		Queue:       make(chan Func, concurrency*concurrency),
 		Cron:        cron.New(cron.WithSeconds()),
 	}
 }
 
 func (m *Minion) WithLogger(log Loggable) *Minion {
 	m.Log = log
+	return m
+}
+func (m *Minion) WithReporter(reporter func(ReportableType, int, *Minion) error) *Minion {
+	m.Reporter = reporter
 	return m
 }
 
@@ -49,9 +65,9 @@ func (m *Minion) Start() error {
 }
 
 // Schedule adds a job to the cron scheduler.
-func (m *Minion) Schedule(schedule string, job Runnable) (cron.EntryID, error) {
+func (m *Minion) Schedule(schedule string, f Func) (cron.EntryID, error) {
 	return m.Cron.AddFunc(schedule, func() {
-		m.Queue <- job
+		m.Queue <- f
 	})
 }
 
@@ -61,58 +77,52 @@ func (m *Minion) Remove(id cron.EntryID) {
 }
 
 // Enqueue adds a job to the queue.
-func (m *Minion) Enqueue(job Runnable) error {
-	m.Queue <- job
-	return nil
+func (m *Minion) Enqueue(f Func) {
+	m.Queue <- f
 }
 
-func (m *Minion) run(workerID int, job Runnable) {
-	head := fmt.Sprintf("worker=%d", workerID)
-	if nameable, ok := job.(Nameable); ok {
-		head += fmt.Sprintf(" job=[%s](%s)", nameable.GetID(), nameable.GetName())
+func (m *Minion) Report(t ReportableType, workerID int) error {
+	if m.Reporter == nil {
+		return nil
 	}
+	return m.Reporter(t, workerID, m)
+}
 
-	reporter, reportable := job.(Reportable)
+func (m *Minion) run(workerID int, f Func) {
+	head := fmt.Sprintf("worker=%d", workerID)
+
 	start := time.Now()
 	m.Log.Infof("%s: starting", head)
 
-	if reportable {
-		err := reporter.Report(ReportableStart, workerID, m)
-		if err != nil {
-			m.Log.Infof("%s: starting, failed to report: %s", head, err)
-			return
-		}
+	err := m.Report(ReportableStart, workerID)
+	if err != nil {
+		m.Log.Errorf("%s: starting, failed to report: %s", head, err)
+		return
 	}
 
-	err := job.Run(workerID, m)
+	err = f()
 	if err != nil {
-		m.Log.Infof("%s: failing", head)
-		if reportable {
-			err := reporter.Report(ReportableError, workerID, m)
-			if err != nil {
-				m.Log.Infof("%s: failing, also failed to report: %s", head, err)
-				return
-			}
+		m.Log.Errorf("%s: failing: %s", head, err)
+		rerr := m.Report(ReportableError, workerID)
+		if rerr != nil {
+			m.Log.Errorf("%s: failing, also failed to report: %s", head, rerr)
+			return
 		}
 		return
 	}
 
-	m.Log.Infof("%s: finishing", head)
-	if reportable {
-		err := reporter.Report(ReportableFinish, workerID, m)
-		if err != nil {
-			m.Log.Infof("%s: finishing, failed to report: %s", head, err)
-			return
-		}
-	}
-
 	diff := time.Since(start)
 	m.Log.Infof("%s: duration: %s", head, diff)
-	if reportable {
-		err := reporter.Report(ReportableDuration, workerID, m)
-		if err != nil {
-			m.Log.Infof("%s: duration, failed to report: %s", head, err)
-			return
-		}
+	err = m.Report(ReportableDuration, workerID)
+	if err != nil {
+		m.Log.Errorf("%s: duration, failed to report: %s", head, err)
+		return
+	}
+
+	m.Log.Infof("%s: finishing", head)
+	err = m.Report(ReportableFinish, workerID)
+	if err != nil {
+		m.Log.Errorf("%s: finishing, failed to report: %s", head, err)
+		return
 	}
 }
