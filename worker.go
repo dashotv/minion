@@ -2,8 +2,8 @@ package minion
 
 type Worker struct {
 	ID     int
-	Queue  chan Func
-	Runner func(workerID int, f Func)
+	Queue  chan *Job
+	Runner func(workerID int, j *Job)
 }
 
 func (w *Worker) Run() {
