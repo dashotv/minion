@@ -24,6 +24,7 @@ func New(concurrency int) *Minion {
 		Log:         &DefaultLogger{},
 		Queue:       make(chan *Job, concurrency*concurrency),
 		Cron:        cron.New(cron.WithSeconds()),
+		Jobs:        make(map[string]Func),
 	}
 }
 
