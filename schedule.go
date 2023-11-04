@@ -6,14 +6,11 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-// Schedule adds a job to the cron scheduler.
-func (m *Minion) Schedule(schedule, name string) (cron.EntryID, error) {
-	f, ok := m.Jobs[name]
-	if !ok {
-		return 0, fmt.Errorf("job not found: %s", name)
-	}
+// Schedule adds (and Registers) a job to the cron scheduler.
+func (m *Minion) Schedule(schedule, name string, f Func) (cron.EntryID, error) {
+	m.Register(name, f)
 	return m.Cron.AddFunc(schedule, func() {
-		m.Queue <- &Job{name, f}
+		m.Queue <- &Job{name, f, nil}
 	})
 }
 
@@ -28,7 +25,16 @@ func (m *Minion) Enqueue(name string) error {
 	if !ok {
 		return fmt.Errorf("job not found: %s", name)
 	}
-	m.Queue <- &Job{name, f}
+	m.Queue <- &Job{name, f, nil}
+	return nil
+}
+
+func (m *Minion) EnqueueWithPayload(name string, payload interface{}) error {
+	f, ok := m.Jobs[name]
+	if !ok {
+		return fmt.Errorf("job not found: %s", name)
+	}
+	m.Queue <- &Job{name, f, payload}
 	return nil
 }
 

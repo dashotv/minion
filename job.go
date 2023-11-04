@@ -1,6 +1,7 @@
 package minion
 
 type Job struct {
-	Name string
-	Func Func
+	Name    string
+	Func    Func
+	Payload interface{}
 }

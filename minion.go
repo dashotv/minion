@@ -16,7 +16,7 @@ type Minion struct {
 	Reporter    Reportable
 }
 
-type Func func() error
+type Func func(any) error
 
 func New(concurrency int) *Minion {
 	return &Minion{
@@ -69,7 +69,7 @@ func (m *Minion) run(workerID int, j *Job) {
 		m.Log.Errorf("%s: starting, failed to report: %s", head, err)
 	}
 
-	err = j.Func()
+	err = j.Func(j.Payload)
 	if err != nil {
 		m.Log.Errorf("%s: failing: %s", head, err)
 		rerr := m.Report(ReportableError, j.Name, workerID)
