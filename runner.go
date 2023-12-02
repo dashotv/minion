@@ -16,6 +16,8 @@ func (r *Runner) Run() {
 }
 
 func (r *Runner) runJob(jobID string) error {
+	r.Minion.notify("job:load", jobID)
+
 	d := &JobData{}
 	err := r.Minion.db.Find(jobID, d)
 	if err != nil {
@@ -35,6 +37,7 @@ func (r *Runner) runJob(jobID string) error {
 
 	attempt := &JobDataAttempt{}
 	attempt.Start()
+	r.Minion.notify("job:start", jobID)
 	i := d.AddAttempt(attempt)
 	err = r.Minion.db.Save(d)
 	if err != nil {
@@ -44,9 +47,7 @@ func (r *Runner) runJob(jobID string) error {
 	err = job.Work(r.Minion.Context)
 	e := errors.Wrap(err, "running job")
 	attempt.Finish(e)
-	if err != nil {
-		return e
-	}
+	r.Minion.notify("job:finish", jobID)
 
 	d.UpdateAttempt(i, attempt)
 	err = r.Minion.db.Save(d)
@@ -54,5 +55,10 @@ func (r *Runner) runJob(jobID string) error {
 		return errors.Wrap(err, "updating job")
 	}
 
+	if err != nil {
+		r.Minion.notify("job:fail", jobID)
+	} else {
+		r.Minion.notify("job:success", jobID)
+	}
 	return e
 }

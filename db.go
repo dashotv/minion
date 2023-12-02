@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dashotv/grimoire"
 	"github.com/pkg/errors"
+
+	"github.com/dashotv/grimoire"
 )
 
 type JobDataStatus string
