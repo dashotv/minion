@@ -1,18 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
+	"github.com/dashotv/grimoire"
+
 	"github.com/dashotv/minion"
 )
-
-type TestPayload struct {
-	Name  string
-	Value int
-}
 
 func main() {
 	min := setupMinion()
@@ -23,11 +25,17 @@ func main() {
 
 	go func() {
 		<-time.After(3 * time.Second)
-		min.Enqueue("test")
+		err := min.Enqueue(&Both{Seconds: 25})
+		if err != nil {
+			log.Fatal("enqueuing job", err)
+		}
 	}()
 	go func() {
 		<-time.After(5 * time.Second)
-		min.EnqueueWithPayload("test", &TestPayload{"test", 1})
+		err := min.Enqueue(&Both{Seconds: 3})
+		if err != nil {
+			log.Fatal("enqueuing job", err)
+		}
 	}()
 
 	select {
@@ -39,21 +47,88 @@ func main() {
 }
 
 func setupMinion() *minion.Minion {
-	c := 0
-	m := minion.New(1)
-	m.Register("test", func(payload any) error {
-		if payload == nil {
-			fmt.Println("test")
-			return nil
-		}
+	ctx := context.Background()
 
-		fmt.Println("test", payload.(*TestPayload).Name, payload.(*TestPayload).Value)
-		return nil
-	})
-	m.Schedule("* * * * * *", "seconds", func(payload any) error {
-		c++
-		fmt.Println("seconds:", c)
-		return nil
-	})
+	db, err := grimoire.New[*minion.JobData]("mongodb://localhost:27017", "minion", "jobs")
+	if err != nil {
+		log.Fatal("creating db", err)
+	}
+
+	ctx = context.WithValue(ctx, "db", db)
+
+	log := zap.NewExample().Sugar()
+	cfg := &minion.Config{
+		Concurrency: 5,
+		Logger:      log,
+		Database:    "minion",
+		Collection:  "jobs",
+		DatabaseURI: "mongodb://localhost:27017",
+	}
+
+	m, err := minion.New(ctx, cfg)
+	if err != nil {
+		log.Fatal("creating minion", err)
+	}
+
+	err = minion.Register(m, &Both{})
+	if err != nil {
+		log.Fatal("registering worker", err)
+	}
+	err = minion.Register(m, &ScheduleWorker{})
+	if err != nil {
+		log.Fatal("registering worker", err)
+	}
+
+	_, err = m.Schedule("* * * * * *", &SchedulePayload{})
+	if err != nil {
+		log.Fatal("scheduling worker", err)
+	}
+
 	return m
+}
+
+type Both struct {
+	Seconds int
+	minion.WorkerDefaults[*Both]
+}
+
+func (b *Both) Kind() string {
+	return "both"
+}
+func (b *Both) Work(ctx context.Context, job *minion.Job[*Both]) error {
+	fmt.Printf("both: sleep %d\n", job.Args.Seconds)
+	time.Sleep(time.Duration(job.Args.Seconds) * time.Second)
+	fmt.Printf("both: done %d\n", job.Args.Seconds)
+	return nil
+}
+
+type SchedulePayload struct{}
+
+func (p *SchedulePayload) Kind() string {
+	return "schedule"
+}
+
+type ScheduleWorker struct {
+	minion.WorkerDefaults[*SchedulePayload]
+}
+
+func (s *ScheduleWorker) Work(ctx context.Context, job *minion.Job[*SchedulePayload]) error {
+	db := ctx.Value("db").(*grimoire.Store[*minion.JobData])
+	list, err := db.Query().
+		Where("status", minion.JobDataStatusRunning).
+		Where("kind", "both").
+		Asc("created_at").
+		Run()
+	if err != nil {
+		return errors.Wrap(err, "querying jobs")
+	}
+
+	fmt.Printf("running jobs: %d\n", len(list))
+	for _, item := range list {
+		if item.ID == job.ID {
+			continue
+		}
+		fmt.Printf("%s %s %s\n", item.ID.Hex(), item.Kind, item.Args)
+	}
+	return nil
 }

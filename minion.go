@@ -1,93 +1,113 @@
 package minion
 
 import (
-	"fmt"
-	"time"
+	"context"
+	"encoding/json"
 
+	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
+	"go.uber.org/zap"
+
+	"github.com/dashotv/grimoire"
 )
 
-type Minion struct {
-	Concurrency int
-	Queue       chan *Job
-	Cron        *cron.Cron
-	Log         Loggable
-	Jobs        map[string]Func
-	Reporter    Reportable
-}
-
-type Func func(any) error
-
-func New(concurrency int) *Minion {
-	return &Minion{
-		Concurrency: concurrency,
-		Log:         &DefaultLogger{},
-		Queue:       make(chan *Job, concurrency*concurrency),
-		Cron:        cron.New(cron.WithSeconds()),
-		Jobs:        make(map[string]Func),
-		Reporter:    &DefaultReporter{},
+func New(ctx context.Context, cfg *Config) (*Minion, error) {
+	db, err := grimoire.New[*JobData](cfg.DatabaseURI, cfg.Database, cfg.Collection)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating job store")
 	}
+
+	return &Minion{
+		Context:     ctx,
+		Concurrency: cfg.Concurrency,
+		Log:         cfg.Logger,
+		db:          db,
+		queue:       make(chan string, cfg.Concurrency*cfg.Concurrency),
+		cron:        cron.New(cron.WithSeconds()),
+		workers:     make(map[string]workerInfo),
+	}, nil
 }
 
-func (m *Minion) WithLogger(log Loggable) *Minion {
-	m.Log = log
-	return m
-}
-func (m *Minion) WithReporter(reporter Reportable) *Minion {
-	m.Reporter = reporter
-	return m
+func Register[T Payload](m *Minion, worker Worker[T]) error {
+	var args T
+
+	kind := args.Kind()
+	if _, ok := m.workers[kind]; ok {
+		return errors.Errorf("worker already registered for kind: %s", kind)
+	}
+
+	m.workers[kind] = workerInfo{
+		jobArgs: args,
+		factory: &workerFactory[T]{worker: worker},
+	}
+
+	return nil
 }
 
-// Start starts the minion.
+type Config struct {
+	Concurrency int
+	Logger      *zap.SugaredLogger
+	Database    string
+	Collection  string
+	DatabaseURI string
+}
+
+type Minion struct {
+	Context     context.Context
+	Concurrency int
+	Log         *zap.SugaredLogger
+	workers     map[string]workerInfo
+	queue       chan string
+	db          *grimoire.Store[*JobData]
+	cron        *cron.Cron
+}
+
 func (m *Minion) Start() error {
-	m.Log.Infof("starting minion (concurrency=%d/%d)...", m.Concurrency, m.Concurrency*m.Concurrency)
+	// m.Log.Infof("starting minion (concurrency=%d/%d)...", m.Concurrency, m.Concurrency*m.Concurrency)
 
 	for w := 0; w < m.Concurrency; w++ {
-		worker := &Worker{
+		runner := &Runner{
 			ID:     w,
-			Queue:  m.Queue,
-			Runner: m.run,
+			Minion: m,
 		}
-		go worker.Run()
+		go runner.Run()
 	}
 
 	go func() {
-		m.Cron.Start()
+		m.cron.Start()
 	}()
 
 	return nil
 }
 
-func (m *Minion) run(workerID int, j *Job) {
-	head := fmt.Sprintf("worker=%d name=%s", workerID, j.Name)
-
-	start := time.Now()
-	m.Log.Infof("%s: starting", head)
-
-	err := m.Report(ReportableStart, j.Name, workerID)
+func (m *Minion) Enqueue(in Payload) error {
+	args, err := json.Marshal(in)
 	if err != nil {
-		m.Log.Errorf("%s: starting, failed to report: %s", head, err)
+		return errors.Wrap(err, "marshaling job args")
 	}
 
-	err = j.Func(j.Payload)
-	if err != nil {
-		m.Log.Errorf("%s: failing: %s", head, err)
-		rerr := m.Report(ReportableError, j.Name, workerID)
-		if rerr != nil {
-			m.Log.Errorf("%s: failing, also failed to report: %s", head, rerr)
-		}
+	data := &JobData{
+		Args: string(args),
+		Kind: in.Kind(),
 	}
 
-	diff := time.Since(start)
-	m.Log.Infof("%s: duration: %s", head, diff)
-	err = m.Report(ReportableDuration, j.Name, workerID)
+	err = m.db.Save(data)
 	if err != nil {
-		m.Log.Errorf("%s: duration, failed to report: %s", head, err)
+		return errors.Wrap(err, "creating job")
 	}
 
-	m.Log.Infof("%s: finishing", head)
-	err = m.Report(ReportableFinish, j.Name, workerID)
-	if err != nil {
-		m.Log.Errorf("%s: finishing, failed to report: %s", head, err)
-	}
+	m.queue <- data.ID.Hex()
+	return nil
+}
+
+// Schedule adds (and Registers) a job to the cron scheduler.
+func (m *Minion) Schedule(schedule string, in Payload) (cron.EntryID, error) {
+	return m.cron.AddFunc(schedule, func() {
+		m.Enqueue(in)
+	})
+}
+
+// Remove removes a job from the cron scheduler.
+func (m *Minion) Remove(id cron.EntryID) {
+	m.cron.Remove(id)
 }
