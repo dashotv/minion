@@ -96,6 +96,10 @@ func (m *Minion) Start() error {
 }
 
 func (m *Minion) Enqueue(in Payload) error {
+	if in == nil {
+		return errors.New("payload is nil")
+	}
+
 	args, err := json.Marshal(in)
 	if err != nil {
 		return errors.Wrap(err, "marshaling job args")

@@ -11,7 +11,10 @@ type Runner struct {
 
 func (r *Runner) Run() {
 	for jobID := range r.Minion.queue {
-		r.runJob(jobID)
+		err := r.runJob(jobID)
+		if err != nil {
+			r.Minion.Log.Errorf("minon:runner:error: %s", err)
+		}
 	}
 }
 
