@@ -58,7 +58,7 @@ func (r *Runner) runJob(jobID string) error {
 		return errors.Wrap(err, "updating job")
 	}
 
-	if err != nil {
+	if e != nil {
 		r.Minion.notify("job:fail", jobID)
 	} else {
 		r.Minion.notify("job:success", jobID)
