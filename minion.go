@@ -21,13 +21,13 @@ func New(ctx context.Context, cfg *Config) (*Minion, error) {
 	if cfg.BufferSize == 0 {
 		cfg.BufferSize = 100
 	}
+	if cfg.PollingInterval == 0 {
+		cfg.PollingInterval = 5
+	}
 
 	return &Minion{
 		Context:       ctx,
-		Concurrency:   cfg.Concurrency,
-		BufferSize:    cfg.BufferSize,
-		Log:           cfg.Logger,
-		Debug:         cfg.Debug,
+		Config:        cfg,
 		db:            db,
 		queue:         make(chan string, cfg.BufferSize),
 		cron:          cron.New(cron.WithSeconds()),
@@ -54,21 +54,21 @@ func Register[T Payload](m *Minion, worker Worker[T]) error {
 }
 
 type Config struct {
-	Concurrency int
-	BufferSize  int
-	Logger      *zap.SugaredLogger
-	Database    string
-	Collection  string
-	DatabaseURI string
-	Debug       bool
+	Concurrency     int
+	BufferSize      int
+	PollingInterval int
+	Logger          *zap.SugaredLogger
+	Database        string
+	Collection      string
+	DatabaseURI     string
+	Debug           bool
 }
 
 type Minion struct {
-	Debug         bool
-	Context       context.Context
-	Concurrency   int
-	BufferSize    int
-	Log           *zap.SugaredLogger
+	Config  *Config
+	Context context.Context
+	Log     *zap.SugaredLogger
+
 	workers       map[string]workerInfo
 	queue         chan string
 	db            *grimoire.Store[*JobData]
@@ -80,11 +80,11 @@ type Minion struct {
 
 func (m *Minion) Start() error {
 	// m.Log.Infof("starting minion (concurrency=%d/%d)...", m.Concurrency, m.Concurrency*m.Concurrency)
-	if m.Debug {
+	if m.Config.Debug {
 		m.Subscribe(m.debug)
 	}
 
-	for w := 0; w < m.Concurrency; w++ {
+	for w := 0; w < m.Config.Concurrency; w++ {
 		runner := &Runner{
 			ID:     w,
 			Minion: m,
@@ -149,7 +149,7 @@ func (m *Minion) Subscribe(f func(*Notification)) {
 
 func (m *Minion) producer() {
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(time.Duration(m.Config.PollingInterval) * time.Second)
 
 		if len(m.queue) == cap(m.queue) {
 			continue
