@@ -28,6 +28,7 @@ func New(ctx context.Context, cfg *Config) (*Minion, error) {
 	return &Minion{
 		Context:       ctx,
 		Config:        cfg,
+		Log:           cfg.Logger,
 		db:            db,
 		queue:         make(chan string, cfg.BufferSize),
 		cron:          cron.New(cron.WithSeconds()),
