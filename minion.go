@@ -3,6 +3,7 @@ package minion
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
@@ -17,16 +18,21 @@ func New(ctx context.Context, cfg *Config) (*Minion, error) {
 		return nil, errors.Wrap(err, "creating job store")
 	}
 
+	if cfg.BufferSize == 0 {
+		cfg.BufferSize = 100
+	}
+
 	return &Minion{
 		Context:       ctx,
 		Concurrency:   cfg.Concurrency,
+		BufferSize:    cfg.BufferSize,
 		Log:           cfg.Logger,
 		Debug:         cfg.Debug,
 		db:            db,
-		queue:         make(chan string, cfg.Concurrency*cfg.Concurrency),
+		queue:         make(chan string, cfg.BufferSize),
 		cron:          cron.New(cron.WithSeconds()),
 		workers:       make(map[string]workerInfo),
-		notifications: make(chan *Notification),
+		notifications: make(chan *Notification, cfg.BufferSize),
 		subs:          []func(*Notification){},
 	}, nil
 }
@@ -49,6 +55,7 @@ func Register[T Payload](m *Minion, worker Worker[T]) error {
 
 type Config struct {
 	Concurrency int
+	BufferSize  int
 	Logger      *zap.SugaredLogger
 	Database    string
 	Collection  string
@@ -60,6 +67,7 @@ type Minion struct {
 	Debug         bool
 	Context       context.Context
 	Concurrency   int
+	BufferSize    int
 	Log           *zap.SugaredLogger
 	workers       map[string]workerInfo
 	queue         chan string
@@ -85,6 +93,10 @@ func (m *Minion) Start() error {
 	}
 
 	go func() {
+		m.producer()
+	}()
+
+	go func() {
 		m.cron.Start()
 	}()
 
@@ -106,8 +118,9 @@ func (m *Minion) Enqueue(in Payload) error {
 	}
 
 	data := &JobData{
-		Args: string(args),
-		Kind: in.Kind(),
+		Args:   string(args),
+		Kind:   in.Kind(),
+		Status: "pending",
 	}
 
 	err = m.db.Save(data)
@@ -115,7 +128,6 @@ func (m *Minion) Enqueue(in Payload) error {
 		return errors.Wrap(err, "creating job")
 	}
 
-	m.queue <- data.ID.Hex()
 	return nil
 }
 
@@ -133,6 +145,26 @@ func (m *Minion) Remove(id cron.EntryID) {
 
 func (m *Minion) Subscribe(f func(*Notification)) {
 	m.subs = append(m.subs, f)
+}
+
+func (m *Minion) producer() {
+	for {
+		time.Sleep(1 * time.Second)
+
+		if len(m.queue) == cap(m.queue) {
+			continue
+		}
+
+		i := cap(m.queue) - len(m.queue)
+		list, err := m.db.Query().Where("status", "pending").Limit(i).Run()
+		if err != nil {
+			m.Log.Errorf("querying pending jobs: %s", err)
+		}
+
+		for _, j := range list {
+			m.queue <- j.ID.Hex()
+		}
+	}
 }
 
 func (m *Minion) debug(n *Notification) {
