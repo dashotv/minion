@@ -7,10 +7,11 @@ import (
 type Runner struct {
 	ID     int
 	Minion *Minion
+	Queue  chan string
 }
 
 func (r *Runner) Run() {
-	for jobID := range r.Minion.queue {
+	for jobID := range r.Queue {
 		err := r.runJob(jobID)
 		if err != nil {
 			r.Minion.Log.Errorf("minon:runner:error: %s", err)
@@ -19,7 +20,7 @@ func (r *Runner) Run() {
 }
 
 func (r *Runner) runJob(jobID string) error {
-	r.Minion.notify("job:load", jobID)
+	r.Minion.notify("job:load", jobID, "-")
 
 	d := &JobData{}
 	err := r.Minion.db.Find(jobID, d)
@@ -40,7 +41,7 @@ func (r *Runner) runJob(jobID string) error {
 
 	attempt := &JobDataAttempt{}
 	attempt.Start()
-	r.Minion.notify("job:start", jobID)
+	r.Minion.notify("job:start", jobID, d.Kind)
 	i := d.AddAttempt(attempt)
 	err = r.Minion.db.Save(d)
 	if err != nil {
@@ -50,7 +51,7 @@ func (r *Runner) runJob(jobID string) error {
 	err = job.Work(r.Minion.Context)
 	e := errors.Wrap(err, "running job")
 	attempt.Finish(e)
-	r.Minion.notify("job:finish", jobID)
+	r.Minion.notify("job:finish", jobID, d.Kind)
 
 	d.UpdateAttempt(i, attempt)
 	err = r.Minion.db.Save(d)
@@ -59,9 +60,9 @@ func (r *Runner) runJob(jobID string) error {
 	}
 
 	if e != nil {
-		r.Minion.notify("job:fail", jobID)
+		r.Minion.notify("job:fail", jobID, d.Kind)
 	} else {
-		r.Minion.notify("job:success", jobID)
+		r.Minion.notify("job:success", jobID, d.Kind)
 	}
 	return e
 }

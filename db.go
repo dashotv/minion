@@ -28,8 +28,9 @@ type JobData struct {
 	//CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 	//UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
 
-	Kind string `bson:"kind,omitempty" json:"kind,omitempty"`
-	Args string `bson:"args,omitempty" json:"args,omitempty"`
+	Kind  string `bson:"kind,omitempty" json:"kind,omitempty"`
+	Args  string `bson:"args,omitempty" json:"args,omitempty"`
+	Queue string `bson:"queue,omitempty" json:"queue,omitempty"`
 
 	Status   string            `bson:"status,omitempty" json:"status,omitempty"`
 	Attempts []*JobDataAttempt `bson:"attempts,omitempty" json:"attempts,omitempty"`
