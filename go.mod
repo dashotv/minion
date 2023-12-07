@@ -5,7 +5,7 @@ go 1.21.3
 require github.com/robfig/cron/v3 v3.0.1
 
 require (
-	github.com/dashotv/grimoire v0.4.0 // indirect
+	github.com/dashotv/grimoire v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

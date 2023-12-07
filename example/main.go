@@ -112,7 +112,7 @@ func setupMinion() *minion.Minion {
 	}
 	log := dev.Sugar()
 	cfg := &minion.Config{
-		Debug:       true,
+		// Debug:       true,
 		Concurrency: 5,
 		BufferSize:  10,
 		Logger:      log,

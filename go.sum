@@ -1,5 +1,7 @@
 github.com/dashotv/grimoire v0.4.0 h1:vT8JXvNqNDDI3FmgVkCGVBD2wPXxScKC2e6IcmEsb9U=
 github.com/dashotv/grimoire v0.4.0/go.mod h1:q76AxToGXZ4acrFIt+ZyCrupxeymiamJzlXO6qtSHzM=
+github.com/dashotv/grimoire v0.4.1 h1:K8H1SLA6oxO0N9qpE6vrVFMc3+prp9W/4gpNdkWkbNY=
+github.com/dashotv/grimoire v0.4.1/go.mod h1:q76AxToGXZ4acrFIt+ZyCrupxeymiamJzlXO6qtSHzM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

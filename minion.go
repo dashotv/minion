@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/dashotv/grimoire"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
-
-	"github.com/dashotv/grimoire"
 )
 
 func New(ctx context.Context, cfg *Config) (*Minion, error) {
@@ -149,7 +148,7 @@ func (m *Minion) enqueueTo(queue string, in Payload) error {
 		Queue:  queue,
 	}
 
-	err = m.db.CreateWithTransaction(data)
+	err = m.db.Save(data)
 	if err != nil {
 		return errors.Wrap(err, "creating job")
 	}
