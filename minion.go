@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/dashotv/grimoire"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/zap"
+
+	"github.com/dashotv/grimoire"
 )
 
 func New(ctx context.Context, cfg *Config) (*Minion, error) {
@@ -126,7 +127,7 @@ func (m *Minion) Start() error {
 	}()
 
 	go func() {
-		res, err := m.db.Collection.UpdateMany(m.Context, bson.M{"status": "canceled"}, bson.M{"status": "pending"})
+		res, err := m.db.Collection.UpdateMany(m.Context, bson.M{"status": "canceled"}, bson.M{"$set": bson.M{"status": "pending"}})
 		if err != nil {
 			m.Log.Errorf("querying canceled jobs: %s", err)
 			return
