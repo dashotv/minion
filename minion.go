@@ -8,6 +8,7 @@ import (
 	"github.com/dashotv/grimoire"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/zap"
 )
 
@@ -121,6 +122,17 @@ func (m *Minion) Start() error {
 	go func() {
 		if len(m.subs) > 0 {
 			m.listen()
+		}
+	}()
+
+	go func() {
+		res, err := m.db.Collection.UpdateMany(m.Context, bson.M{"status": "canceled"}, bson.M{"status": "pending"})
+		if err != nil {
+			m.Log.Errorf("querying canceled jobs: %s", err)
+			return
+		}
+		if res.ModifiedCount > 0 {
+			m.Log.Infof("resuming %d canceled jobs", res.ModifiedCount)
 		}
 	}()
 

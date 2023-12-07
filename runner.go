@@ -32,7 +32,10 @@ func (r *Runner) runJob(jobID string) error {
 
 	w, ok := r.Minion.workers[d.Kind]
 	if !ok {
-		return errors.Errorf("worker not found for kind: %s", d.Kind)
+		e := errors.Errorf("worker not found for kind: %s", d.Kind)
+		d.Status = "cancelled"
+		_ = r.Minion.db.Save(d)
+		return e
 	}
 
 	job := w.factory.Create(d)
