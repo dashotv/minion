@@ -149,7 +149,7 @@ func (m *Minion) enqueueTo(queue string, in Payload) error {
 		Queue:  queue,
 	}
 
-	err = m.db.Save(data)
+	err = m.db.CreateWithTransaction(data)
 	if err != nil {
 		return errors.Wrap(err, "creating job")
 	}

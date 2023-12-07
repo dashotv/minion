@@ -1,6 +1,8 @@
 package minion
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 )
 
@@ -25,7 +27,7 @@ func (r *Runner) runJob(jobID string) error {
 	d := &JobData{}
 	err := r.Minion.db.Find(jobID, d)
 	if err != nil {
-		return errors.Wrap(err, "finding job")
+		return errors.Wrap(err, fmt.Sprintf("finding job: %s", jobID))
 	}
 
 	w, ok := r.Minion.workers[d.Kind]
