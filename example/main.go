@@ -174,6 +174,12 @@ func (n *Number) Work(ctx context.Context, job *minion.Job[*Number]) error {
 	i := rand.Intn(5)
 	time.Sleep(time.Duration(i) * time.Second)
 	fmt.Printf("number: %d %d\n", job.Args.Number, i)
+	if i == 4 {
+		return errors.New("random error")
+	}
+	if i == 3 {
+		panic("random panic")
+	}
 	return nil
 }
 
