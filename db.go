@@ -9,20 +9,11 @@ import (
 	"github.com/dashotv/grimoire"
 )
 
-type JobDataStatus string
-
-const (
-	JobDataStatusPending  JobDataStatus = "pending"
-	JobDataStatusRunning  JobDataStatus = "running"
-	JobDataStatusFailed   JobDataStatus = "failed"
-	JobDataStatusFinished JobDataStatus = "finished"
-)
-
 type stackTracer interface {
 	StackTrace() errors.StackTrace
 }
 
-type JobData struct {
+type Model struct {
 	grimoire.Document `bson:",inline"` // includes default model settings
 	//ID        primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
 	//CreatedAt time.Time          `json:"created_at" bson:"created_at"`
@@ -32,22 +23,22 @@ type JobData struct {
 	Args  string `bson:"args,omitempty" json:"args,omitempty"`
 	Queue string `bson:"queue,omitempty" json:"queue,omitempty"`
 
-	Status   string            `bson:"status,omitempty" json:"status,omitempty"`
-	Attempts []*JobDataAttempt `bson:"attempts,omitempty" json:"attempts,omitempty"`
+	Status   string     `bson:"status,omitempty" json:"status,omitempty"`
+	Attempts []*Attempt `bson:"attempts,omitempty" json:"attempts,omitempty"`
 }
 
-func (d *JobData) AddAttempt(a *JobDataAttempt) int {
+func (d *Model) AddAttempt(a *Attempt) int {
 	d.Status = a.Status
 	d.Attempts = append(d.Attempts, a)
 	return len(d.Attempts) - 1
 }
 
-func (d *JobData) UpdateAttempt(i int, a *JobDataAttempt) {
+func (d *Model) UpdateAttempt(i int, a *Attempt) {
 	d.Status = a.Status
 	d.Attempts[i] = a
 }
 
-type JobDataAttempt struct {
+type Attempt struct {
 	StartedAt  time.Time `bson:"started_at,omitempty" json:"started_at,omitempty"`
 	Duration   float64   `bson:"duration,omitempty" json:"duration,omitempty"`
 	Status     string    `bson:"status,omitempty" json:"status,omitempty"`
@@ -55,16 +46,16 @@ type JobDataAttempt struct {
 	Stacktrace []string  `bson:"stacktrace,omitempty" json:"stacktrace,omitempty"`
 }
 
-func (a *JobDataAttempt) Start() {
+func (a *Attempt) Start() {
 	a.StartedAt = time.Now()
-	a.Status = "running"
+	a.Status = string(StatusRunning)
 }
 
-func (a *JobDataAttempt) Finish(err error) {
-	a.Status = "finished"
+func (a *Attempt) Finish(err error) {
+	a.Status = string(StatusFinished)
 	a.Duration = time.Since(a.StartedAt).Seconds()
 	if err != nil {
-		a.Status = "failed"
+		a.Status = string(StatusFailed)
 		a.Error = err.Error()
 
 		err, ok := errors.Cause(err).(stackTracer)
@@ -80,11 +71,4 @@ func (a *JobDataAttempt) Finish(err error) {
 			a.Stacktrace = append(a.Stacktrace, fmt.Sprintf("%+v", f))
 		}
 	}
-}
-
-type Job[T Payload] struct {
-	*JobData
-
-	// Args are the arguments for the job.
-	Args T
 }
