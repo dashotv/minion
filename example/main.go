@@ -146,6 +146,10 @@ func setupMinion() *minion.Minion {
 		Fatal("scheduling worker: %s", err)
 	}
 
+	m.SubscribeStats(func(s minion.Stats) {
+		fmt.Printf("STATS: %+v\n", s)
+	})
+
 	return m
 }
 
@@ -193,14 +197,14 @@ type ScheduleWorker struct {
 }
 
 func (s *ScheduleWorker) Work(ctx context.Context, job *minion.Job[*SchedulePayload]) error {
-	db := ctx.Value("db").(*grimoire.Store[*minion.Model])
+	// db := ctx.Value("db").(*grimoire.Store[*minion.Model])
 
-	for _, n := range []string{"default", "schedule", "number"} {
-		err := stats(db, n)
-		if err != nil {
-			return errors.Wrap(err, "stats")
-		}
-	}
+	// for _, n := range []string{"default", "schedule", "number"} {
+	// 	err := stats(db, n)
+	// 	if err != nil {
+	// 		return errors.Wrap(err, "stats")
+	// 	}
+	// }
 
 	// 	total, err := db.Count(bson.M{"status": bson.M{"$nin": bson.A{minion.StatusFinished, minion.StatusFailed}}})
 	// 	if err != nil {
@@ -240,24 +244,25 @@ func (s *ScheduleWorker) Work(ctx context.Context, job *minion.Job[*SchedulePayl
 	return nil
 }
 
-func stats(db *grimoire.Store[*minion.Model], queue string) error {
-	failed, err := db.Count(bson.M{"queue": queue, "status": minion.StatusFailed})
-	if err != nil {
-		return errors.Wrap(err, "counting jobs")
-	}
-	running, err := db.Count(bson.M{"queue": queue, "status": minion.StatusRunning})
-	if err != nil {
-		return errors.Wrap(err, "counting jobs")
-	}
-	pending, err := db.Count(bson.M{"queue": queue, "status": bson.M{"$nin": bson.A{minion.StatusFinished, minion.StatusFailed}}})
-	if err != nil {
-		return errors.Wrap(err, "counting jobs")
-	}
-	finished, err := db.Count(bson.M{"queue": queue, "status": bson.M{"$in": bson.A{minion.StatusFinished, minion.StatusFailed}}})
-	if err != nil {
-		return errors.Wrap(err, "counting jobs")
-	}
-
-	fmt.Printf("stats: %s: %d %d %d %d\n", queue, running, pending, failed, finished)
-	return nil
-}
+//
+// func stats(db *grimoire.Store[*minion.Model], queue string) error {
+// 	failed, err := db.Count(bson.M{"queue": queue, "status": minion.StatusFailed})
+// 	if err != nil {
+// 		return errors.Wrap(err, "counting jobs")
+// 	}
+// 	running, err := db.Count(bson.M{"queue": queue, "status": minion.StatusRunning})
+// 	if err != nil {
+// 		return errors.Wrap(err, "counting jobs")
+// 	}
+// 	pending, err := db.Count(bson.M{"queue": queue, "status": bson.M{"$nin": bson.A{minion.StatusFinished, minion.StatusFailed}}})
+// 	if err != nil {
+// 		return errors.Wrap(err, "counting jobs")
+// 	}
+// 	finished, err := db.Count(bson.M{"queue": queue, "status": bson.M{"$in": bson.A{minion.StatusFinished, minion.StatusFailed}}})
+// 	if err != nil {
+// 		return errors.Wrap(err, "counting jobs")
+// 	}
+//
+// 	fmt.Printf("stats: %s: %d %d %d %d\n", queue, running, pending, failed, finished)
+// 	return nil
+// }

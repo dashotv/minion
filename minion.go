@@ -23,6 +23,9 @@ type Minion struct {
 	cron          *cron.Cron
 	subs          []func(*Notification)
 	listening     bool
+
+	statsEntry cron.EntryID
+	statsSubs  []func(Stats)
 }
 
 type Config struct {
