@@ -109,13 +109,13 @@ func (m *Minion) Start() error {
 
 	go func() {
 		if m.Config.RetryCanceled {
-			res, err := m.db.Collection.UpdateMany(m.Context, bson.M{"status": "canceled"}, bson.M{"$set": bson.M{"status": "pending"}})
+			res, err := m.db.Collection.UpdateMany(m.Context, bson.M{"status": StatusCancelled}, bson.M{"$set": bson.M{"status": StatusPending}})
 			if err != nil {
-				m.Log.Errorf("querying canceled jobs: %s", err)
+				m.Log.Errorf("querying cancelled jobs: %s", err)
 				return
 			}
 			if res.ModifiedCount > 0 {
-				m.Log.Infof("resuming %d canceled jobs", res.ModifiedCount)
+				m.Log.Infof("resuming %d cancelled jobs", res.ModifiedCount)
 			}
 		}
 	}()
