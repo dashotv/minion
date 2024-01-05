@@ -1,7 +1,8 @@
 repo_name: dashotv/minion
-report_id: 7fb16e76c5beb029838f6f95a8bcb983
+report_id: 5ddd62429177e01278b59d90a407fb60
+version: 0.1
 repo_type: Public
-timestamp: '2023-12-14T10:04:25+00:00'
+timestamp: '2024-01-05T09:04:37+00:00'
 requested_by: shawncatz
 provider: github
 branch: main
@@ -17,6 +18,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Languages
   image_url: https://img.stackshare.io/service/1005/O6AczwfV_400x400.png
+  detection_source_url: https://github.com/dashotv/minion
   detection_source: Repo Metadata
 - name: MongoDB
   description: The database for giant ideas
@@ -26,6 +28,7 @@ tools:
   category: Data Stores
   sub_category: Databases
   image_url: https://img.stackshare.io/service/1030/leaf-360x360.png
+  detection_source_url: https://github.com/dashotv/minion/blob/main/go.mod
   detection_source: go.mod
   last_updated_by: Shawn Catanzarite
   last_updated_on: 2023-12-07 04:31:58.000000000 Z
@@ -37,6 +40,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Version Control System
   image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source_url: https://github.com/dashotv/minion
   detection_source: Repo Metadata
 - name: Testify
   description: A toolkit with common assertions and mocks that plays nicely with the
@@ -48,6 +52,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Go Testing
   image_url: https://img.stackshare.io/service/8695/stretchr.png
+  detection_source_url: https://github.com/dashotv/minion/blob/main/go.mod
   detection_source: go.mod
   last_updated_by: Shawn Catanzarite
   last_updated_on: 2023-12-07 04:31:58.000000000 Z
