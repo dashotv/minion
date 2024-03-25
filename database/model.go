@@ -1,4 +1,4 @@
-package minion
+package database
 
 import (
 	"fmt"
@@ -19,11 +19,12 @@ type Model struct {
 	//CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 	//UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
 
-	Kind  string `bson:"kind,omitempty" json:"kind,omitempty"`
-	Args  string `bson:"args,omitempty" json:"args,omitempty"`
-	Queue string `bson:"queue,omitempty" json:"queue,omitempty"`
+	Client string `bson:"client" json:"client" grimoire:"index"`
+	Kind   string `bson:"kind" json:"kind" grimoire:"index"`
+	Args   string `bson:"args,omitempty" json:"args,omitempty"`
+	Queue  string `bson:"queue,omitempty" json:"queue,omitempty"`
 
-	Status   string     `bson:"status,omitempty" json:"status,omitempty"`
+	Status   string     `bson:"status,omitempty" json:"status,omitempty" grimoire:"index"`
 	Attempts []*Attempt `bson:"attempts,omitempty" json:"attempts,omitempty"`
 }
 

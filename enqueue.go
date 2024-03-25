@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
+
+	"github.com/dashotv/minion/database"
 )
 
 func (m *Minion) Enqueue(in Payload) error {
@@ -27,14 +29,15 @@ func (m *Minion) enqueueTo(queue string, in Payload) error {
 		return errors.Wrap(err, "marshaling job args")
 	}
 
-	data := &Model{
+	data := &database.Model{
+		Client: m.Client,
 		Args:   string(args),
 		Kind:   in.Kind(),
-		Status: string(StatusPending),
+		Status: string(database.StatusPending),
 		Queue:  queue,
 	}
 
-	err = m.db.Save(data)
+	err = m.db.Jobs.Save(data)
 	if err != nil {
 		return errors.Wrap(err, "creating job")
 	}

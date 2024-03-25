@@ -1,6 +1,8 @@
 package minion
 
 import (
+	"context"
+
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -15,18 +17,18 @@ type stat struct {
 type Stats map[string]map[string]int
 
 func (m *Minion) SubscribeStats(f func(Stats)) {
-	if m.statsEntry == 0 {
-		id, err := m.cron.AddFunc("* * * * * *", m.stats)
-		if err != nil {
-			m.Log.Errorf("error scheduling stats: %s", err)
-			return
-		}
-		m.statsEntry = id
-	}
+	// if m.statsEntry == 0 {
+	// 	id, err := m.cron.AddFunc("* * * * * *", m.stats)
+	// 	if err != nil {
+	// 		m.Log.Errorf("error scheduling stats: %s", err)
+	// 		return
+	// 	}
+	// 	m.statsEntry = id
+	// }
 	m.statsSubs = append(m.statsSubs, f)
 }
 
-func (m *Minion) stats() {
+func (m *Minion) stats(ctx context.Context) {
 	if m.statsEntry == 0 {
 		return
 	}
@@ -40,7 +42,7 @@ func (m *Minion) stats() {
 	//	{ $group: { _id: {status:"$status",queue:"$queue"}, count: {$sum: 1}}},
 	//  { $project: { count: 1 } }
 	// ])
-	cur, err := m.db.Collection.Aggregate(m.Context, bson.A{
+	cur, err := m.db.Jobs.Collection.Aggregate(ctx, bson.A{
 		bson.M{"$group": bson.M{"_id": bson.M{"queue": "$queue", "status": "$status"}, "count": bson.M{"$sum": 1}}},
 		bson.M{"$project": bson.M{"count": 1}},
 	})
@@ -50,7 +52,7 @@ func (m *Minion) stats() {
 	}
 
 	results := make([]*stat, 0)
-	if err = cur.All(m.Context, &results); err != nil {
+	if err = cur.All(ctx, &results); err != nil {
 		m.Log.Errorf("error decoding stats: %s", err)
 		m.Remove(m.statsEntry)
 	}

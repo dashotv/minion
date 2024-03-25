@@ -2,30 +2,32 @@ package minion
 
 import (
 	"context"
+	"fmt"
+	"time"
 
-	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/zap"
 
-	"github.com/dashotv/grimoire"
+	"github.com/dashotv/minion/database"
 )
 
 type Minion struct {
-	Config  *Config
-	Context context.Context
-	Log     *zap.SugaredLogger
+	Client string
+	Config *Config
+	Log    *zap.SugaredLogger
 
 	queues        map[string]*Queue
 	notifications chan *Notification
 	workers       map[string]registration
-	db            *grimoire.Store[*Model]
+	db            *database.Connector
 	cron          *cron.Cron
 	subs          []func(*Notification)
 	listening     bool
 
 	statsEntry cron.EntryID
 	statsSubs  []func(Stats)
+
+	cancel context.CancelFunc
 }
 
 type Config struct {
@@ -33,31 +35,41 @@ type Config struct {
 	BufferSize      int
 	PollingInterval int
 	Timeout         int
-	RetryCanceled   bool
-	Logger          *zap.SugaredLogger
-	Database        string
-	Collection      string
-	DatabaseURI     string
-	Debug           bool
+
+	Router bool
+	Port   int
+
+	Logger *zap.SugaredLogger
+
+	Database    string
+	Collection  string
+	DatabaseURI string
+
+	RetryCanceled       bool
+	ShutdownWaitSeconds int
+	Debug               bool
 }
 
-func New(ctx context.Context, cfg *Config) (*Minion, error) {
-	db, err := grimoire.New[*Model](cfg.DatabaseURI, cfg.Database, cfg.Collection)
+func New(client string, cfg *Config) (*Minion, error) {
+	db, err := database.New(cfg.DatabaseURI, cfg.Database, cfg.Collection)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating job store")
+		return nil, fmt.Errorf("creating database: %w", err)
 	}
 
 	if cfg.Concurrency == 0 {
-		cfg.Concurrency = 1
+		cfg.Concurrency = 5
 	}
 	if cfg.BufferSize == 0 {
-		cfg.BufferSize = 100
+		cfg.BufferSize = 10
 	}
 	if cfg.PollingInterval == 0 {
 		cfg.PollingInterval = 1
 	}
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 600 // 10 minutes
+	}
+	if cfg.ShutdownWaitSeconds == 0 {
+		cfg.ShutdownWaitSeconds = 5
 	}
 
 	queues := map[string]*Queue{
@@ -66,7 +78,7 @@ func New(ctx context.Context, cfg *Config) (*Minion, error) {
 	}
 
 	return &Minion{
-		Context:       ctx,
+		Client:        client,
 		Config:        cfg,
 		Log:           cfg.Logger,
 		db:            db,
@@ -75,13 +87,31 @@ func New(ctx context.Context, cfg *Config) (*Minion, error) {
 		cron:          cron.New(cron.WithSeconds()),
 		workers:       make(map[string]registration),
 		subs:          []func(*Notification){},
+		cancel:        nil,
 	}, nil
 }
 
-func (m *Minion) Start() error {
+func (m *Minion) Start(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	m.cancel = cancel
 	// m.Log.Infof("starting minion (concurrency=%d/%d)...", m.Concurrency, m.Concurrency*m.Concurrency)
 	if m.Config.Debug {
 		m.Subscribe(m.debug)
+	}
+
+	// TODO: these should only change for our client
+	if err := m.db.UpdateAbandonedJobs(ctx); err != nil {
+		return fmt.Errorf("updating abandoned jobs: %w", err)
+	}
+
+	if m.Config.RetryCanceled {
+		count, err := m.db.UpdateCancelledJobs(ctx)
+		if err != nil {
+			return fmt.Errorf("updating cancelled jobs: %w", err)
+		}
+		if count > 0 {
+			m.Log.Infof("resuming %d cancelled jobs", count)
+		}
 	}
 
 	for _, queue := range m.queues {
@@ -91,10 +121,11 @@ func (m *Minion) Start() error {
 				Minion: m,
 				Queue:  queue,
 			}
-			go runner.Run()
+			go runner.Run(ctx)
 		}
+
 		p := &Producer{Minion: m, Queue: queue}
-		p.Run()
+		p.Run(ctx)
 	}
 
 	go func() {
@@ -103,19 +134,21 @@ func (m *Minion) Start() error {
 
 	go func() {
 		if len(m.subs) > 0 {
-			m.listen()
+			m.listen(ctx)
 		}
 	}()
 
 	go func() {
-		if m.Config.RetryCanceled {
-			res, err := m.db.Collection.UpdateMany(m.Context, bson.M{"status": StatusCancelled}, bson.M{"$set": bson.M{"status": StatusPending}})
-			if err != nil {
-				m.Log.Errorf("querying cancelled jobs: %s", err)
+		if len(m.statsSubs) == 0 {
+			return
+		}
+		for {
+			select {
+			case <-time.After(time.Duration(1 * time.Second)):
+				m.stats(ctx)
+			case <-ctx.Done():
+				m.Log.Debugf("minion shutting down")
 				return
-			}
-			if res.ModifiedCount > 0 {
-				m.Log.Infof("resuming %d cancelled jobs", res.ModifiedCount)
 			}
 		}
 	}()
@@ -123,36 +156,9 @@ func (m *Minion) Start() error {
 	return nil
 }
 
-// Schedule adds (and Registers) a job to the cron scheduler.
-func (m *Minion) Schedule(schedule string, in Payload) (cron.EntryID, error) {
-	return m.cron.AddFunc(schedule, func() {
-		m.notify("job:scheduled", "-", in.Kind())
-		m.enqueueTo("schedule", in)
-	})
-}
-
-func (m *Minion) ScheduleFunc(schedule, name string, f func() error) (cron.EntryID, error) {
-	return m.cron.AddFunc(schedule, func() {
-		err := f()
-		if err != nil {
-			m.Log.Error(err)
-
-			data := &Model{
-				Args:   "{}",
-				Kind:   name,
-				Status: string(StatusFailed),
-				Queue:  "schedule_func",
-			}
-
-			err = m.db.Save(data)
-			if err != nil {
-				m.Log.Errorf("error saving job: %s", err)
-			}
-		}
-	})
-}
-
-// Remove removes a job from the cron scheduler.
-func (m *Minion) Remove(id cron.EntryID) {
-	m.cron.Remove(id)
+func (m *Minion) Stop() {
+	if m.cancel != nil {
+		m.cancel()
+		<-time.After(time.Duration(m.Config.ShutdownWaitSeconds) * time.Second)
+	}
 }

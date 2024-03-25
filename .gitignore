@@ -1,0 +1,5 @@
+static/
+!static/embed.go
+!/static/assets/.keep
+/tmp
+ui/.vite/

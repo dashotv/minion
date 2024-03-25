@@ -11,21 +11,12 @@ import (
 	"context"
 	"encoding/json"
 	"time"
-)
 
-type Status string
-
-const (
-	StatusPending   Status = "pending"
-	StatusQueued    Status = "queued"
-	StatusRunning   Status = "running"
-	StatusFailed    Status = "failed"
-	StatusFinished  Status = "finished"
-	StatusCancelled Status = "cancelled"
+	"github.com/dashotv/minion/database"
 )
 
 type Job[T Payload] struct {
-	*Model
+	*database.Model
 
 	// Args are the arguments for the job.
 	Args T
@@ -59,7 +50,7 @@ type wrapped interface {
 
 type wrappedWorker[T Payload] struct {
 	job    *Job[T]
-	data   *Model
+	data   *database.Model
 	worker Worker[T]
 }
 
@@ -79,13 +70,13 @@ func (w *wrappedWorker[T]) Unmarshal() error {
 }
 
 type factory interface {
-	Create(data *Model) wrapped
+	Create(data *database.Model) wrapped
 }
 
 type workerFactory[T Payload] struct {
 	worker Worker[T]
 }
 
-func (f *workerFactory[T]) Create(data *Model) wrapped {
+func (f *workerFactory[T]) Create(data *database.Model) wrapped {
 	return &wrappedWorker[T]{data: data, worker: f.worker}
 }

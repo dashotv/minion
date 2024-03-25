@@ -1,0 +1,50 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  # - name: build
+  #   image: golang
+  #   commands:
+  #     - go test -v ./...
+  #     - go build
+  - name: publish
+    image: plugins/docker
+    environment:
+      DOCKER_BUILDKIT: 1
+    settings:
+      registry: docker.dasho.tv
+      username:
+        from_secret: docker_dasho_username
+      password:
+        from_secret: docker_dasho_password
+      repo: docker.dasho.tv/dashotv/runic
+      tags:
+        - latest
+        - ${DRONE_BUILD_NUMBER}
+  - name: deploy
+    image: appleboy/drone-ssh
+    settings:
+      host:
+        - 10.0.4.62
+      port: 22
+      username: deploy
+      key:
+        from_secret: ssh_key
+      command_timeout: 2m
+      script:
+        - cd /srv/dashotv && docker compose pull -q runic && docker compose up -d --no-deps runic
+  - name: slack
+    image: plugins/slack
+    settings:
+      webhook:
+        from_secret: slack_webhook
+    when:
+      status: [success, failure]
+
+trigger:
+  branch:
+    - main
+  event:
+    - push
+    - custom
