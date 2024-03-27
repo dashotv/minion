@@ -42,7 +42,7 @@ func (p *Producer) handle() {
 	}
 
 	i := p.Queue.Remaining()
-	list, err := p.Minion.db.Jobs.Query().Where("queue", p.Queue.Name).Where("status", database.StatusPending).Asc("created_at").Limit(i).Run()
+	list, err := p.Minion.db.Jobs.Query().Where("client", p.Minion.Client).Where("queue", p.Queue.Name).Where("status", database.StatusPending).Asc("created_at").Limit(i).Run()
 	if err != nil {
 		p.Minion.Log.Errorf("querying pending jobs: %s", err)
 	}
