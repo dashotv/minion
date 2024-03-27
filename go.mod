@@ -1,8 +1,6 @@
 module github.com/dashotv/minion
 
-go 1.21.5
-
-toolchain go1.22.1
+go 1.22.0
 
 require (
 	github.com/caarlos0/env/v10 v10.0.0
