@@ -1,13 +1,13 @@
 ############################
 # STEP 1a build ui
 ############################
-FROM node:20-alpine as ui-builder
+FROM oven/bun as ui-builder
 
 WORKDIR /app/ui
-COPY ui/package.json ui/yarn.lock ui/.yarn ./
-RUN  --mount=type=cache,target=/app/ui/node_modules yarn install
+COPY ui/package.json ui/bun.lockb ./
+RUN  --mount=type=cache,target=/app/ui/node_modules bun install
 COPY ui/ ./
-RUN --mount=type=cache,target=/app/ui/node_modules yarn build
+RUN --mount=type=cache,target=/app/ui/node_modules bun run build
 
 ############################
 # STEP 1b build go binary
@@ -34,4 +34,4 @@ FROM alpine
 WORKDIR /root/
 COPY --from=builder /go/bin/server .
 COPY .env.vault .
-CMD ["./server", "server"]
+CMD ["./server"]

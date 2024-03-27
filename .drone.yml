@@ -18,7 +18,7 @@ steps:
         from_secret: docker_dasho_username
       password:
         from_secret: docker_dasho_password
-      repo: docker.dasho.tv/dashotv/runic
+      repo: docker.dasho.tv/dashotv/minion
       tags:
         - latest
         - ${DRONE_BUILD_NUMBER}
@@ -33,7 +33,7 @@ steps:
         from_secret: ssh_key
       command_timeout: 2m
       script:
-        - cd /srv/dashotv && docker compose pull -q runic && docker compose up -d --no-deps runic
+        - cd /srv/dashotv && docker compose pull -q minion && docker compose up -d --no-deps minion
   - name: slack
     image: plugins/slack
     settings:
