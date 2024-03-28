@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/streamingfast/logging"
@@ -9,6 +8,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/term"
 
+	"github.com/dashotv/fae"
 	"github.com/dashotv/minion/database"
 )
 
@@ -42,14 +42,14 @@ func setupLogger(s *Server) error {
 		s.Log = log.Sugar().Named("server")
 		return err
 	default:
-		return fmt.Errorf("unknown logger: %s", s.Config.Logger)
+		return fae.Errorf("unknown logger: %s", s.Config.Logger)
 	}
 }
 
 func setupDatabase(s *Server) error {
 	con, err := database.New(s.Config.MongoURI, s.Config.MongoDatabase, s.Config.MongoCollection)
 	if err != nil {
-		return fmt.Errorf("creating job store: %w", err)
+		return fae.Errorf("creating job store: %w", err)
 	}
 	s.DB = con
 	return nil

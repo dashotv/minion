@@ -2,12 +2,12 @@ package minion
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 
+	"github.com/dashotv/fae"
 	"github.com/dashotv/minion/database"
 )
 
@@ -53,7 +53,7 @@ type Config struct {
 func New(client string, cfg *Config) (*Minion, error) {
 	db, err := database.New(cfg.DatabaseURI, cfg.Database, cfg.Collection)
 	if err != nil {
-		return nil, fmt.Errorf("creating database: %w", err)
+		return nil, fae.Errorf("creating database: %w", err)
 	}
 
 	if cfg.Concurrency == 0 {
@@ -101,13 +101,13 @@ func (m *Minion) Start(ctx context.Context) error {
 
 	// TODO: these should only change for our client
 	if err := m.db.UpdateAbandonedJobs(ctx); err != nil {
-		return fmt.Errorf("updating abandoned jobs: %w", err)
+		return fae.Errorf("updating abandoned jobs: %w", err)
 	}
 
 	if m.Config.RetryCanceled {
 		count, err := m.db.UpdateCancelledJobs(ctx)
 		if err != nil {
-			return fmt.Errorf("updating cancelled jobs: %w", err)
+			return fae.Errorf("updating cancelled jobs: %w", err)
 		}
 		if count > 0 {
 			m.Log.Infof("resuming %d cancelled jobs", count)

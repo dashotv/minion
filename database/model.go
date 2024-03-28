@@ -1,16 +1,14 @@
 package database
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-
+	"github.com/dashotv/fae"
 	"github.com/dashotv/grimoire"
 )
 
 type stackTracer interface {
-	StackTrace() errors.StackTrace
+	StackTrace() []string
 }
 
 type Model struct {
@@ -57,19 +55,15 @@ func (a *Attempt) Finish(err error) {
 	a.Duration = time.Since(a.StartedAt).Seconds()
 	if err != nil {
 		a.Status = string(StatusFailed)
-		a.Error = err.Error()
+		a.Error = fae.Cause(err).Error()
 
-		err, ok := errors.Cause(err).(stackTracer)
-		if !ok {
-			return
-		}
-
-		st := err.StackTrace()
+		st := fae.StackTrace(err)
+		st = st[1:] // remove the first entry, it's the error
 		if len(st) > 10 {
 			st = st[:10]
 		}
 		for _, f := range st {
-			a.Stacktrace = append(a.Stacktrace, fmt.Sprintf("%+v", f))
+			a.Stacktrace = append(a.Stacktrace, f)
 		}
 	}
 }

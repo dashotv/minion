@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-
+	"github.com/dashotv/fae"
 	"github.com/dashotv/minion/database"
 )
 
@@ -20,7 +19,7 @@ func (r *Runner) Run(ctx context.Context) {
 	for jobID := range r.Queue.channel {
 		err := r.runJob(ctx, jobID)
 		if err != nil {
-			r.Minion.Log.Errorf("minon:runner:error: %s", err)
+			r.Minion.Log.Errorf("runner: %s", err)
 		}
 	}
 }
@@ -29,12 +28,12 @@ func (r *Runner) loadJob(jobID string) (wrapped, *database.Model, error) {
 	d := &database.Model{}
 	err := r.Minion.db.Jobs.Find(jobID, d)
 	if err != nil {
-		return nil, d, errors.Wrap(err, fmt.Sprintf("finding job: %s", jobID))
+		return nil, d, fae.Wrap(err, fmt.Sprintf("finding job: %s", jobID))
 	}
 
 	w, ok := r.Minion.workers[d.Kind]
 	if !ok {
-		e := errors.Errorf("worker not found for kind: %s", d.Kind)
+		e := fae.Errorf("worker not found for kind: %s", d.Kind)
 		d.Status = string(database.StatusCancelled)
 		_ = r.Minion.db.Jobs.Save(d)
 		return nil, d, e
@@ -43,7 +42,7 @@ func (r *Runner) loadJob(jobID string) (wrapped, *database.Model, error) {
 	job := w.factory.Create(d)
 	err = job.Unmarshal()
 	if err != nil {
-		return nil, d, errors.Wrap(err, "unmarshaling job")
+		return nil, d, fae.Wrap(err, "unmarshaling job")
 	}
 
 	return job, d, nil
@@ -56,7 +55,7 @@ func (r *Runner) loadJob(jobID string) (wrapped, *database.Model, error) {
 func (r *Runner) runJobWork(ctx context.Context, job wrapped) (err error) {
 	defer func() {
 		if recovery := recover(); recovery != nil {
-			err = errors.Errorf("panic: %v", recovery)
+			err = fae.Errorf("panic: %v", recovery)
 		}
 	}()
 
@@ -67,9 +66,9 @@ func (r *Runner) runJobWork(ctx context.Context, job wrapped) (err error) {
 
 	select {
 	case <-time.After(t):
-		err = errors.Errorf("timeout")
+		err = fae.Errorf("timeout")
 	case <-ctx.Done():
-		return errors.Errorf("cancelled")
+		return fae.Errorf("cancelled")
 	default:
 		err = job.Work(ctx)
 	}
@@ -83,7 +82,7 @@ func (r *Runner) runJob(ctx context.Context, jobID string) (err error) {
 
 	job, d, err := r.loadJob(jobID)
 	if err != nil {
-		return errors.Wrap(err, "loading job")
+		return fae.Wrap(err, "loading job")
 	}
 
 	err = r.runJobAttempt(ctx, jobID, d, job)
@@ -103,19 +102,19 @@ func (r *Runner) runJobAttempt(ctx context.Context, jobID string, d *database.Mo
 	i := d.AddAttempt(attempt)
 	err := r.Minion.db.Jobs.Save(d)
 	if err != nil {
-		return errors.Wrap(err, "updating job")
+		return fae.Wrap(err, "updating job")
 	}
 
 	r.Minion.notify("job:start", jobID, d.Kind)
 	err = r.runJobWork(ctx, job)
-	e := errors.Wrap(err, "running job")
+	e := fae.Wrap(err, "running job")
 	attempt.Finish(e)
 	r.Minion.notify("job:finish", jobID, d.Kind)
 
 	d.UpdateAttempt(i, attempt)
 	err = r.Minion.db.Jobs.Save(d)
 	if err != nil {
-		return errors.Wrap(err, "updating job")
+		return fae.Wrap(err, "updating job")
 	}
 
 	return e
@@ -142,7 +141,7 @@ func withTimeout(timeout time.Duration, delegate func() error) (err error, ok bo
 	go func() {
 		defer func() {
 			if recovery := recover(); recovery != nil {
-				ch <- errors.Errorf("panic: %v", recovery)
+				ch <- fae.Errorf("panic: %v", recovery)
 			}
 		}()
 		ch <- delegate()

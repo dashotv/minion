@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/zap"
 
+	"github.com/dashotv/fae"
 	"github.com/dashotv/minion/database"
 	"github.com/dashotv/minion/static"
 )
@@ -75,7 +75,7 @@ func (r *Router) customHTTPErrorHandler(err error, c echo.Context) {
 			err = c.JSON(code, map[string]string{"error": "true", "message": he.Error()})
 		}
 		if err != nil {
-			c.Logger().Error(fmt.Errorf("error handling error: %w", err))
+			c.Logger().Error(fae.Errorf("error handling error: %w", err))
 		}
 	}
 }
@@ -100,7 +100,7 @@ func (r *Router) Stop() error {
 	defer cancel()
 
 	if err := r.Echo.Shutdown(ctx); err != nil {
-		return fmt.Errorf("error shutting down the server: %w", err)
+		return fae.Errorf("error shutting down the server: %w", err)
 	}
 
 	return nil
@@ -134,12 +134,12 @@ func (r *Router) handleList(c echo.Context) error {
 func (r *Router) handleCreate(c echo.Context) error {
 	kind := c.QueryParam("kind")
 	if kind == "" {
-		return errors.New("missing kind")
+		return fae.New("missing kind")
 	}
 
 	client := c.QueryParam("client")
 	if client == "" {
-		return errors.New("missing client")
+		return fae.New("missing client")
 	}
 
 	j := &database.Model{
@@ -158,7 +158,7 @@ func (r *Router) handleCreate(c echo.Context) error {
 func (r *Router) handleDelete(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
-		return errors.New("missing id")
+		return fae.New("missing id")
 	}
 	hard := c.QueryParam("hard") == "true"
 

@@ -1,6 +1,6 @@
 package minion
 
-import "github.com/pkg/errors"
+import "github.com/dashotv/fae"
 
 type registration struct {
 	args        Payload
@@ -19,7 +19,7 @@ func RegisterWithQueue[T Payload](m *Minion, worker Worker[T], queue string) err
 
 	kind := args.Kind()
 	if _, ok := m.workers[kind]; ok {
-		return errors.Errorf("worker already registered for kind: %s", kind)
+		return fae.Errorf("worker already registered for kind: %s", kind)
 	}
 
 	m.workers[kind] = registration{

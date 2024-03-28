@@ -24,6 +24,7 @@ func (m *Minion) ScheduleFunc(schedule, name string, f func() error) (cron.Entry
 
 			data := &database.Model{
 				Args:   "{}",
+				Client: m.Client,
 				Kind:   name,
 				Status: string(database.StatusFailed),
 				Queue:  "schedule_func",

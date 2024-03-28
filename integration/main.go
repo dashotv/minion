@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/zap"
 
+	"github.com/dashotv/fae"
 	"github.com/dashotv/minion"
 	"github.com/dashotv/minion/database"
 )
@@ -167,7 +167,7 @@ func (n *Number) Work(ctx context.Context, job *minion.Job[*Number]) error {
 	time.Sleep(time.Duration(i) * time.Second)
 	fmt.Printf("number: %d %d\n", job.Args.Number, i)
 	if i == 4 {
-		return errors.New("random error")
+		return fae.New("random error")
 	}
 	if i == 3 {
 		panic("random panic")
@@ -178,12 +178,12 @@ func (n *Number) Work(ctx context.Context, job *minion.Job[*Number]) error {
 func resetDatabase() error {
 	con, err := database.New(mongoURI, mongoDatabase, mongoCollection)
 	if err != nil {
-		return errors.Wrap(err, "creating database")
+		return fae.Wrap(err, "creating database")
 	}
 
 	_, err = con.Jobs.Collection.DeleteMany(context.Background(), bson.M{})
 	if err != nil {
-		return errors.Wrap(err, "deleting all jobs")
+		return fae.Wrap(err, "deleting all jobs")
 	}
 
 	return nil

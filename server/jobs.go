@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/zap"
 
+	"github.com/dashotv/fae"
 	"github.com/dashotv/minion"
 	"github.com/dashotv/minion/database"
 )
@@ -36,6 +37,14 @@ func setupJobs(s *Server) error {
 	if _, err := m.ScheduleFunc("0 0 8 * * *", "jobs_cleanup", j.jobs_cleanup); err != nil {
 		return err
 	}
+	if s.Config.Debug {
+		if err := minion.Register(m, &FailJob{}); err != nil {
+			return err
+		}
+		if _, err := m.Schedule("0 * * * * *", &FailJob{}); err != nil {
+			return err
+		}
+	}
 
 	s.Jobs = j
 	return nil
@@ -62,12 +71,24 @@ func (j *Jobs) Stop() error {
 func (j *Jobs) jobs_cleanup() error {
 	_, err := j.DB.Jobs.Collection.DeleteMany(context.Background(), bson.M{"status": database.StatusFinished, "updated_at": bson.M{"$lt": time.Now().Add(-time.Hour * time.Duration(j.keepFinished))}})
 	if err != nil {
-		return fmt.Errorf("cleaning up finished jobs: %w", err)
+		return fae.Errorf("cleaning up finished jobs: %w", err)
 	}
 
 	_, err = j.DB.Jobs.Collection.DeleteMany(context.Background(), bson.M{"status": database.StatusFailed, "updated_at": bson.M{"$lt": time.Now().Add(-time.Hour * time.Duration(j.keepFailed))}})
 	if err != nil {
-		return fmt.Errorf("cleaning up failed jobs: %w", err)
+		return fae.Errorf("cleaning up failed jobs: %w", err)
 	}
 	return nil
+}
+
+// This gets enable when DEBUG is true
+// Tests job failure every minute
+type FailJob struct {
+	minion.WorkerDefaults[*FailJob]
+}
+
+func (j *FailJob) Kind() string { return "fail_job" }
+func (j *FailJob) Work(ctx context.Context, job *minion.Job[*FailJob]) error {
+	_, err := os.ReadFile("non-existing-file")
+	return fae.Wrap(err, "failing job")
 }
