@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -9,6 +10,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.infratographer.com/x/echox/echozap"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.uber.org/zap"
 
 	"github.com/dashotv/minion/database"
 	"github.com/dashotv/minion/static"
@@ -22,6 +25,7 @@ type Router struct {
 
 	DB   *database.Connector
 	Echo *echo.Echo
+	Log  *zap.SugaredLogger
 }
 
 // Router creates and registers the routes of the minion package
@@ -30,7 +34,7 @@ func setupRouter(s *Server) error {
 	e.HideBanner = true
 	e.HidePort = true
 	e.Use(middleware.Recover())
-	e.Use(echozap.Middleware(s.Log.Named("router").Desugar()))
+	e.Use(echozap.Middleware(s.Log.Named("echo").Desugar()))
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 		Root:       ".",
 		Index:      "index.html", // This is the default html page for your SPA
@@ -39,7 +43,8 @@ func setupRouter(s *Server) error {
 		Filesystem: http.FS(static.FS),
 	})) // https://echo.labstack.com/docs/middleware/static
 
-	r := &Router{Port: s.Config.Port, Echo: e, DB: s.DB}
+	r := &Router{Port: s.Config.Port, Echo: e, DB: s.DB, Log: s.Log.Named("router")}
+	e.HTTPErrorHandler = r.customHTTPErrorHandler
 
 	e.GET("/jobs", r.handleList)
 	e.POST("/jobs", r.handleCreate)
@@ -50,6 +55,29 @@ func setupRouter(s *Server) error {
 
 	s.Router = r
 	return nil
+}
+
+func (r *Router) customHTTPErrorHandler(err error, c echo.Context) {
+	r.Log.Errorf("handler error: %v", err)
+	he, ok := err.(*echo.HTTPError)
+	if !ok {
+		he = &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}
+	}
+
+	code := he.Code
+	if !c.Response().Committed {
+		if c.Request().Method == http.MethodHead {
+			err = c.NoContent(code)
+		} else {
+			err = c.JSON(code, map[string]string{"error": "true", "message": he.Error()})
+		}
+		if err != nil {
+			c.Logger().Error(fmt.Errorf("error handling error: %w", err))
+		}
+	}
 }
 
 func (r *Router) Start(ctx context.Context) {
@@ -82,22 +110,91 @@ func (r *Router) handleList(c echo.Context) error {
 	page := QueryParamInt(c, "page", 1)
 	limit := QueryParamInt(c, "limit", pagesize)
 	skip := (page - 1) * limit
+	status := c.QueryParam("status")
 
 	stats, err := r.jobStats()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, H{"error": err.Error()})
 	}
 
-	list, err := r.DB.Jobs.Query().Limit(limit).Skip(skip).Desc("created_at").Run()
+	q := r.DB.Jobs.Query().Limit(limit).Skip(skip).Desc("created_at")
+
+	if status != "" {
+		q = q.Where("status", status)
+	}
+
+	list, err := q.Run()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, H{"error": err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, H{"error": false, "stats": stats, "results": list})
 }
+
 func (r *Router) handleCreate(c echo.Context) error {
+	kind := c.QueryParam("kind")
+	if kind == "" {
+		return errors.New("missing kind")
+	}
+
+	client := c.QueryParam("client")
+	if client == "" {
+		return errors.New("missing client")
+	}
+
+	j := &database.Model{
+		Kind:   kind,
+		Client: client,
+		Status: string(database.StatusPending),
+	}
+
+	if err := r.DB.Jobs.Save(j); err != nil {
+		return err
+	}
+
 	return c.JSON(http.StatusNotImplemented, H{"error": "not implemented"})
 }
+
+func (r *Router) handleDelete(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return errors.New("missing id")
+	}
+	hard := c.QueryParam("hard") == "true"
+
+	if id == string(database.StatusPending) && !hard {
+		filter := bson.M{"status": database.StatusPending}
+		if _, err := r.DB.Jobs.Collection.UpdateMany(context.Background(), filter, bson.M{"$set": bson.M{"status": database.StatusCancelled}}); err != nil {
+			return err
+		}
+		return c.JSON(http.StatusOK, H{"error": false})
+	} else if id == string(database.StatusFailed) && hard {
+		filter := bson.M{"status": database.StatusFailed}
+		if _, err := r.DB.Jobs.Collection.DeleteMany(context.Background(), filter); err != nil {
+			return err
+		}
+		return c.JSON(http.StatusOK, H{"error": false})
+	} else if id == string(database.StatusCancelled) && hard {
+		filter := bson.M{"status": database.StatusCancelled}
+		if _, err := r.DB.Jobs.Collection.DeleteMany(context.Background(), filter); err != nil {
+			return err
+		}
+		return c.JSON(http.StatusOK, H{"error": false})
+	}
+
+	j, err := r.DB.Jobs.Get(id, &database.Model{})
+	if err != nil {
+		return err
+	}
+
+	j.Status = string(database.StatusCancelled)
+	if err := r.DB.Jobs.Save(j); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, H{"error": false})
+}
+
 func (r *Router) handleGet(c echo.Context) error {
 	return c.JSON(http.StatusNotImplemented, H{"error": "not implemented"})
 }
@@ -105,8 +202,5 @@ func (r *Router) handlePatch(c echo.Context) error {
 	return c.JSON(http.StatusNotImplemented, H{"error": "not implemented"})
 }
 func (r *Router) handleUpdate(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, H{"error": "not implemented"})
-}
-func (r *Router) handleDelete(c echo.Context) error {
 	return c.JSON(http.StatusNotImplemented, H{"error": "not implemented"})
 }
