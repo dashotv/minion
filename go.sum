@@ -5,10 +5,6 @@ github.com/blendle/zapdriver v1.3.1 h1:C3dydBOWYRiOk+B8X9IVZ5IOe+7cl+tGOexN4QqHf
 github.com/blendle/zapdriver v1.3.1/go.mod h1:mdXfREi6u5MArG4j9fewC+FGnXaBR+T4Ox4J2u4eHCc=
 github.com/caarlos0/env/v10 v10.0.0 h1:yIHUBZGsyqCnpTkbjk8asUlx6RFhhEs+h7TOBdgdzXA=
 github.com/caarlos0/env/v10 v10.0.0/go.mod h1:ZfulV76NvVPw3tm591U4SwL3Xx9ldzBP9aGxzeN7G18=
-github.com/dashotv/fae v0.1.2 h1:+CjcgRLBowwIxREY7a6xB1o2f+2VA5qse2GaBvonL5g=
-github.com/dashotv/fae v0.1.2/go.mod h1:+deep7H052Bz6GxW7HXiel4S+Rqkva1mPETS+3tQOVU=
-github.com/dashotv/fae v0.1.3 h1:w3hk6EBjCCvgbwKA3fTBD9YiD3SpN9YfQsF5xVTLPKU=
-github.com/dashotv/fae v0.1.3/go.mod h1:+deep7H052Bz6GxW7HXiel4S+Rqkva1mPETS+3tQOVU=
 github.com/dashotv/fae v0.1.4 h1:zI2a3lgEztiWnFs2Tny84f9F2WaP1WoBi47DzBarwDo=
 github.com/dashotv/fae v0.1.4/go.mod h1:+deep7H052Bz6GxW7HXiel4S+Rqkva1mPETS+3tQOVU=
 github.com/dashotv/grimoire v0.5.1 h1:DP0sY3NTO6fjOpx+q72ZZkHoEzYCGqxNF4mH0pVNHW8=
@@ -89,7 +85,6 @@ github.com/montanaflynn/stats v0.7.1/go.mod h1:etXPPgVO6n31NxCd9KQUMvCM+ve0ruNzt
 github.com/pelletier/go-toml/v2 v2.1.1 h1:LWAJwfNvjQZCFIDKWYQaM62NcYeYViCmWIwmOStowAI=
 github.com/pelletier/go-toml/v2 v2.1.1/go.mod h1:tJU2Z3ZkXwnxa4DPO899bsyIoywizdUvyaeZurnPPDc=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
-github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=

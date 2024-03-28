@@ -8,7 +8,6 @@ require (
 	github.com/dashotv/grimoire v0.5.1
 	github.com/dotenv-org/godotenvvault v0.6.0
 	github.com/labstack/echo/v4 v4.11.4
-	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/streamingfast/logging v0.0.0-20230608130331-f22c91403091
 	go.infratographer.com/x v0.3.9
