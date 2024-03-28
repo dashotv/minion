@@ -53,7 +53,7 @@ const Recent = () => {
         <Grid item xs={12} md={6} justifyContent="end"></Grid>
       </Grid>
 
-      <JobsList {...{ data, status, handleCancel, handleDelete }} />
+      <JobsList {...{ data, handleCancel, handleDelete }} />
     </>
   );
 };

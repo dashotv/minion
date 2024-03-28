@@ -42,11 +42,10 @@ const stringToColor = (value: string) => {
 
 export interface JobsListProps {
   data?: any;
-  status: string;
   handleCancel: (id: string) => void;
 }
 
-export function JobsList({ data, status, handleCancel }: JobsListProps) {
+export function JobsList({ data, handleCancel }: JobsListProps) {
   const [selected, setSelected] = useState<Job | null>(null);
   const open = (job: Job) => {
     setSelected(job);

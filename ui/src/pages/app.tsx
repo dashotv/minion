@@ -40,11 +40,11 @@ const App = () => {
       to: '',
       element: <Recent />,
     },
-    // {
-    //   label: "Search",
-    //   to: "search",
-    //   element: <Search />,
-    // },
+    {
+      label: 'Search',
+      to: 'search',
+      element: <Search />,
+    },
   ];
   return (
     <ThemeProvider theme={darkTheme}>

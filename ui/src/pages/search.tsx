@@ -1,14 +1,11 @@
-import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-
-import { JobsList } from 'components/jobs';
 
 const Search = () => {
   // limit, skip, queries, etc
-  const [page] = useState(1);
-  const handleCancel = (id: string) => {
-    console.log('cancel', id);
-  };
+  // const [page] = useState(1);
+  // const handleCancel = (id: string) => {
+  //   console.log('cancel', id);
+  // };
 
   return (
     <>
@@ -16,7 +13,7 @@ const Search = () => {
         <title>Minion - Jobs</title>
         <meta name="description" content="runic" />
       </Helmet>
-      <JobsList {...{ page, handleCancel }} />
+      {/* <JobsList {...{ page, handleCancel }} /> */}
     </>
   );
 };
