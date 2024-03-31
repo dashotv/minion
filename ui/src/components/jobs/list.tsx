@@ -140,10 +140,10 @@ const Error = ({ error }: { error?: string }) => {
 const Title = ({ args }: { args: string }) => {
   if (args === '{}') return null;
   const parsed = JSON.parse(args);
-  if (!parsed || !parsed.title) return null;
+  if (!parsed || (!parsed.title && !parsed.Title)) return null;
   return (
     <Typography variant="caption" color="gray" minWidth="0" /*width={{ xs: '100%', md: 'auto' }}*/ noWrap>
-      {parsed.title}
+      {parsed.title || parsed.Title}
     </Typography>
   );
 };
