@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
+import { useInterval } from 'usehooks-ts';
+
 import BlockIcon from '@mui/icons-material/Block';
 import ErrorIcon from '@mui/icons-material/Error';
 import PendingIcon from '@mui/icons-material/Pending';
 import UndoIcon from '@mui/icons-material/Undo';
 import { Grid, IconButton, Stack } from '@mui/material';
+
+import { useQueryClient } from '@tanstack/react-query';
 
 import { JobsList, JobsStats, deleteJob, useJobsQuery } from 'components/jobs';
 
@@ -14,6 +18,7 @@ const Recent = () => {
   const [page] = useState(1);
   const [status, setStatus] = useState('');
   const { data } = useJobsQuery(page, status);
+  const queryClient = useQueryClient();
 
   const handleCancel = (id: string) => {
     console.log('cancel', id);
@@ -24,6 +29,11 @@ const Recent = () => {
     console.log('delete', id);
     deleteJob(id, true);
   };
+
+  useInterval(() => {
+    console.log('refresh');
+    queryClient.invalidateQueries({ queryKey: ['jobs'] });
+  }, 5000);
 
   return (
     <>
