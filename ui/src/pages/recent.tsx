@@ -31,7 +31,6 @@ const Recent = () => {
   };
 
   useInterval(() => {
-    console.log('refresh');
     queryClient.invalidateQueries({ queryKey: ['jobs'] });
   }, 5000);
 
