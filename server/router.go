@@ -46,12 +46,15 @@ func setupRouter(s *Server) error {
 	r := &Router{Port: s.Config.Port, Echo: e, DB: s.DB, Log: s.Log.Named("router")}
 	e.HTTPErrorHandler = r.customHTTPErrorHandler
 
-	e.GET("/jobs", r.handleList)
-	e.POST("/jobs", r.handleCreate)
-	e.GET("/jobs/:id", r.handleGet)
-	e.PATCH("/jobs/:id", r.handlePatch)
-	e.PUT("/jobs/:id", r.handleUpdate)
-	e.DELETE("/jobs/:id", r.handleDelete)
+	g := e.Group("/jobs")
+	g.GET("", r.handleList)
+	g.GET("/", r.handleList)
+	g.POST("", r.handleCreate)
+	g.POST("/", r.handleCreate)
+	g.GET("/:id", r.handleGet)
+	g.PATCH("/:id", r.handlePatch)
+	g.PUT("/:id", r.handleUpdate)
+	g.DELETE("/:id", r.handleDelete)
 
 	s.Router = r
 	return nil
@@ -145,6 +148,8 @@ func (r *Router) handleCreate(c echo.Context) error {
 	j := &database.Model{
 		Kind:   kind,
 		Client: client,
+		Args:   "{}",
+		Queue:  "default",
 		Status: string(database.StatusPending),
 	}
 
@@ -152,7 +157,7 @@ func (r *Router) handleCreate(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusNotImplemented, H{"error": "not implemented"})
+	return c.JSON(http.StatusOK, H{"error": false})
 }
 
 func (r *Router) handleDelete(c echo.Context) error {
