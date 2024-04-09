@@ -89,6 +89,15 @@ type FailJob struct {
 
 func (j *FailJob) Kind() string { return "fail_job" }
 func (j *FailJob) Work(ctx context.Context, job *minion.Job[*FailJob]) error {
+	return fae.Wrap(j.Level1(), "failing job")
+}
+func (j *FailJob) Level1() error {
+	return j.Level2()
+}
+func (j *FailJob) Level2() error {
+	return j.Level3()
+}
+func (j *FailJob) Level3() error {
 	_, err := os.ReadFile("non-existing-file")
-	return fae.Wrap(err, "failing job")
+	return fae.Wrap(err, "level 3")
 }
