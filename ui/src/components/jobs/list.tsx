@@ -8,7 +8,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import PendingIcon from '@mui/icons-material/Pending';
 import { Link, Paper, Stack, Typography } from '@mui/material';
 
-import { ButtonMap, ButtonMapButton, Chrono, Row } from 'components/common';
+import { ButtonMap, ButtonMapButton, Chrono, Row } from '@dashotv/components';
 
 import { Job, JobsDialog } from '.';
 

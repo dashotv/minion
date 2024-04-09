@@ -15,7 +15,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
-import { Chrono } from 'components/common';
+import { Chrono } from '@dashotv/components';
 
 import { Job } from './types';
 

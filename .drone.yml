@@ -12,12 +12,15 @@ steps:
     image: plugins/docker
     environment:
       DOCKER_BUILDKIT: 1
+      GITHUB_TOKEN:
+        from_secret: npm_github_token
     settings:
       registry: docker.dasho.tv
       username:
         from_secret: docker_dasho_username
       password:
         from_secret: docker_dasho_password
+      build_args_from_env: [GITHUB_TOKEN]
       repo: docker.dasho.tv/dashotv/minion
       tags:
         - latest

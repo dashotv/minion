@@ -9,6 +9,7 @@ import PendingIcon from '@mui/icons-material/Pending';
 import UndoIcon from '@mui/icons-material/Undo';
 import { Grid, IconButton, Stack } from '@mui/material';
 
+import { Container } from '@dashotv/components';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { JobsList, JobsStats, deleteJob, useJobsQuery } from 'components/jobs';
@@ -41,28 +42,31 @@ const Recent = () => {
         <meta name="description" content="runic" />
       </Helmet>
 
-      <Grid container spacing={0} sx={{ mb: 2 }}>
-        <Grid item xs={12} md={6}>
-          <Stack direction="row" spacing={0} alignItems="center">
-            <IconButton title="Cancel Pending" onClick={() => handleCancel('pending')}>
-              <PendingIcon color="disabled" />
-            </IconButton>
-            <IconButton title="Delete Cancelled" onClick={() => handleDelete('cancelled')}>
-              <BlockIcon color="warning" />
-            </IconButton>
-            <IconButton title="Delete Failed" onClick={() => handleDelete('failed')}>
-              <ErrorIcon color="error" />
-            </IconButton>
-            <IconButton title="Show All" onClick={() => setStatus('')}>
-              <UndoIcon color="primary" />
-            </IconButton>
-            {data?.stats ? <JobsStats stats={data.stats} setStatus={setStatus} /> : null}
-          </Stack>
+      <Container>
+        <Grid container spacing={0} sx={{ mb: 2 }}>
+          <Grid item xs={12} md={6}>
+            <Stack direction="row" spacing={0} alignItems="center">
+              <IconButton title="Cancel Pending" onClick={() => handleCancel('pending')}>
+                <PendingIcon color="disabled" />
+              </IconButton>
+              <IconButton title="Delete Cancelled" onClick={() => handleDelete('cancelled')}>
+                <BlockIcon color="warning" />
+              </IconButton>
+              <IconButton title="Delete Failed" onClick={() => handleDelete('failed')}>
+                <ErrorIcon color="error" />
+              </IconButton>
+              <IconButton title="Show All" onClick={() => setStatus('')}>
+                <UndoIcon color="primary" />
+              </IconButton>
+              {data?.stats ? <JobsStats stats={data.stats} setStatus={setStatus} /> : null}
+            </Stack>
+          </Grid>
+          <Grid item xs={12} md={6} justifyContent="end"></Grid>
         </Grid>
-        <Grid item xs={12} md={6} justifyContent="end"></Grid>
-      </Grid>
-
-      <JobsList {...{ data, handleCancel, handleDelete }} />
+      </Container>
+      <Container>
+        <JobsList {...{ data, handleCancel, handleDelete }} />
+      </Container>
     </>
   );
 };

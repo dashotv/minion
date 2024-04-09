@@ -4,7 +4,7 @@
 FROM oven/bun as ui-builder
 
 WORKDIR /app/ui
-COPY ui/package.json ui/bun.lockb ./
+COPY ui/package.json ui/bun.lockb ui/bunfig.toml ./
 RUN  --mount=type=cache,target=/app/ui/node_modules bun install
 COPY ui/ ./
 RUN --mount=type=cache,target=/app/ui/node_modules bun run build

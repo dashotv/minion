@@ -1,6 +1,6 @@
 import { Button, Stack } from '@mui/material';
 
-import { Pill } from 'components/common';
+import { Pill } from '@dashotv/components';
 
 import { Stats } from './types';
 

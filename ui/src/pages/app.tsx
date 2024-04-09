@@ -1,10 +1,10 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 
+import { Container } from '@dashotv/components';
+import { RoutingTabs, RoutingTabsRoute } from '@dashotv/components';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { Container } from 'components/Layout';
-import { RoutingTabs, RoutingTabsRoute } from 'components/common';
 import Recent from 'pages/recent';
 import Search from 'pages/search';
 
@@ -33,7 +33,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => {
+const App = ({ mount }: { mount: string }) => {
   const tabsMap: RoutingTabsRoute[] = [
     {
       label: 'Recent',
@@ -51,7 +51,7 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <CssBaseline />
         <Container>
-          <RoutingTabs data={tabsMap} route={'/'} />
+          <RoutingTabs data={tabsMap} mount={mount} />
         </Container>
       </QueryClientProvider>
     </ThemeProvider>
