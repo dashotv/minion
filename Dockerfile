@@ -1,13 +1,19 @@
+ARG GITHUB_TOKEN
+
 ############################
 # STEP 1a build ui
 ############################
-FROM oven/bun as ui-builder
+FROM node:20-alpine as ui-builder
+ARG GITHUB_TOKEN
 
+ENV GITHUB_TOKEN $GITHUB_TOKEN
 WORKDIR /app/ui
-COPY ui/package.json ui/bun.lockb ui/bunfig.toml ./
-RUN  --mount=type=cache,target=/app/ui/node_modules bun install
+COPY ui/package.json ui/package-lock.json ./
+RUN echo //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN > ./.npmrc
+RUN echo @dashotv:registry=https://npm.pkg.github.com/ >> ./.npmrc
+RUN  --mount=type=cache,target=/app/ui/node_modules npm install
 COPY ui/ ./
-RUN --mount=type=cache,target=/app/ui/node_modules bun run build
+RUN --mount=type=cache,target=/app/ui/node_modules npm run build
 
 ############################
 # STEP 1b build go binary
