@@ -54,23 +54,25 @@ func (a *Attempt) Start() {
 func (a *Attempt) Finish(err error) {
 	a.Status = string(StatusFinished)
 	a.Duration = time.Since(a.StartedAt).Seconds()
-	if err != nil {
-		a.Status = string(StatusFailed)
-		fmt.Printf("DEBUG: %v\n", err)
-		a.Error = err.Error()
+	if err == nil {
+		return
+	}
 
-		cause := fae.Cause(err)
-		if cause != nil {
-			a.Error = cause.Error()
-		}
+	a.Status = string(StatusFailed)
+	fmt.Printf("DEBUG: %v\n", err)
+	a.Error = err.Error()
 
-		st := fae.StackTrace(err)
-		st = st[1:] // remove the first entry, it's the error
-		if len(st) > 10 {
-			st = st[:10]
-		}
-		for _, f := range st {
-			a.Stacktrace = append(a.Stacktrace, f)
-		}
+	cause := fae.Cause(err)
+	if cause != nil {
+		a.Error = cause.Error()
+	}
+
+	st := fae.StackTrace(err)
+	st = st[1:] // remove the first entry, it's the error
+	if len(st) > 10 {
+		st = st[:10]
+	}
+	for _, f := range st {
+		a.Stacktrace = append(a.Stacktrace, f)
 	}
 }
