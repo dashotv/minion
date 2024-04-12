@@ -55,7 +55,12 @@ func (a *Attempt) Finish(err error) {
 	a.Duration = time.Since(a.StartedAt).Seconds()
 	if err != nil {
 		a.Status = string(StatusFailed)
-		a.Error = fae.Cause(err).Error()
+		a.Error = err.Error()
+
+		cause := fae.Cause(err)
+		if cause != nil {
+			a.Error = cause.Error()
+		}
 
 		st := fae.StackTrace(err)
 		st = st[1:] // remove the first entry, it's the error
