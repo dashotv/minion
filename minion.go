@@ -99,13 +99,12 @@ func (m *Minion) Start(ctx context.Context) error {
 		m.Subscribe(m.debug)
 	}
 
-	// TODO: these should only change for our client
-	if err := m.db.UpdateAbandonedJobs(ctx); err != nil {
+	if err := m.db.UpdateAbandonedJobs(ctx, m.Client); err != nil {
 		return fae.Errorf("updating abandoned jobs: %w", err)
 	}
 
 	if m.Config.RetryCanceled {
-		count, err := m.db.UpdateCancelledJobs(ctx)
+		count, err := m.db.UpdateCancelledJobs(ctx, m.Client)
 		if err != nil {
 			return fae.Errorf("updating cancelled jobs: %w", err)
 		}

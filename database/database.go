@@ -23,16 +23,16 @@ func New(uri, db, collection string) (*Connector, error) {
 	return &Connector{Jobs: con}, nil
 }
 
-func (c *Connector) UpdateAbandonedJobs(ctx context.Context) error {
-	_, err := c.Jobs.Collection.UpdateMany(ctx, bson.M{"status": bson.M{"$in": bson.A{StatusRunning, StatusQueued}}}, bson.M{"$set": bson.M{"status": StatusFailed}, "$push": bson.M{"attempts": bson.M{"error": "minion restarted"}}})
+func (c *Connector) UpdateAbandonedJobs(ctx context.Context, client string) error {
+	_, err := c.Jobs.Collection.UpdateMany(ctx, bson.M{"client": client, "status": bson.M{"$in": bson.A{StatusRunning, StatusQueued}}}, bson.M{"$set": bson.M{"status": StatusCancelled}, "$push": bson.M{"attempts": bson.M{"error": "minion restarted"}}})
 	if err != nil {
 		return fae.Errorf("querying cancelled jobs: %s", err)
 	}
 	return nil
 }
 
-func (c *Connector) UpdateCancelledJobs(ctx context.Context) (int64, error) {
-	res, err := c.Jobs.Collection.UpdateMany(ctx, bson.M{"status": StatusCancelled}, bson.M{"$set": bson.M{"status": StatusPending}})
+func (c *Connector) UpdateCancelledJobs(ctx context.Context, client string) (int64, error) {
+	res, err := c.Jobs.Collection.UpdateMany(ctx, bson.M{"client": client, "status": StatusCancelled}, bson.M{"$set": bson.M{"status": StatusPending}})
 	if err != nil {
 		return 0, fae.Errorf("querying cancelled jobs: %s", err)
 	}
