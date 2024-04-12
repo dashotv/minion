@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/dashotv/fae"
@@ -55,6 +56,7 @@ func (a *Attempt) Finish(err error) {
 	a.Duration = time.Since(a.StartedAt).Seconds()
 	if err != nil {
 		a.Status = string(StatusFailed)
+		fmt.Printf("DEBUG: %v\n", err)
 		a.Error = err.Error()
 
 		cause := fae.Cause(err)
