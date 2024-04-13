@@ -19,6 +19,10 @@ func (r *Runner) Run(ctx context.Context) {
 	for jobID := range r.Queue.channel {
 		err := r.runJob(ctx, jobID)
 		if err != nil {
+			m := err.Error()
+			if len(m) > 100 {
+				m = m[:97] + "..."
+			}
 			r.Minion.Log.Errorf("runner: %s", err)
 		}
 	}
