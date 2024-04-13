@@ -59,7 +59,7 @@ func (a *Attempt) Finish(err error) {
 	}
 
 	a.Status = string(StatusFailed)
-	fmt.Printf("DEBUG: %v\n", err)
+	fmt.Printf("DEBUG: %#v\n", err)
 	a.Error = err.Error()
 
 	cause := fae.Cause(err)
