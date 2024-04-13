@@ -54,13 +54,14 @@ func (a *Attempt) Start() {
 func (a *Attempt) Finish(err error) {
 	a.Status = string(StatusFinished)
 	a.Duration = time.Since(a.StartedAt).Seconds()
+	fmt.Printf("BEFORE: %#v\n", err)
 	if err == nil {
+		fmt.Printf("RETURN: %#v\n", err)
 		return
 	}
 
 	a.Status = string(StatusFailed)
-	fmt.Printf("DEBUG: %#v\n", err)
-	a.Error = err.Error()
+	fmt.Printf("AFTER: %#v\n", err)
 
 	cause := fae.Cause(err)
 	if cause != nil {

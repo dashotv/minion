@@ -3,6 +3,7 @@ package minion
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/dashotv/fae"
@@ -19,9 +20,37 @@ func (r *Runner) Run(ctx context.Context) {
 	for jobID := range r.Queue.channel {
 		err := r.runJob(ctx, jobID)
 		if err != nil {
+			m := err.Error()
+			if len(m) > 100 {
+				m = m[:97] + "..."
+			}
 			r.Minion.Log.Errorf("runner: %s", err)
 		}
 	}
+}
+
+// runJob runs a job
+func (r *Runner) runJob(ctx context.Context, jobID string) (err error) {
+	r.Minion.notify("job:load", jobID, "-")
+
+	job, d, err := r.loadJob(jobID)
+	if err != nil {
+		return fae.Wrap(err, "loading job")
+	}
+
+	defer func() {
+		if recovery := recover(); recovery != nil {
+			err = fae.Errorf("panic (outside of job work): %v\n%s", recovery, string(debug.Stack()))
+		}
+
+		if err != nil {
+			r.Minion.notify("job:fail", jobID, d.Kind)
+		} else {
+			r.Minion.notify("job:success", jobID, d.Kind)
+		}
+	}()
+
+	return r.runJobAttempt(ctx, jobID, d, job)
 }
 
 func (r *Runner) loadJob(jobID string) (wrapped, *database.Model, error) {
@@ -46,6 +75,30 @@ func (r *Runner) loadJob(jobID string) (wrapped, *database.Model, error) {
 	}
 
 	return job, d, nil
+}
+
+func (r *Runner) runJobAttempt(ctx context.Context, jobID string, d *database.Model, job wrapped) error {
+	attempt := &database.Attempt{}
+	attempt.Start()
+	i := d.AddAttempt(attempt)
+	err := r.Minion.db.Jobs.Save(d)
+	if err != nil {
+		return fae.Wrap(err, "updating job")
+	}
+
+	r.Minion.notify("job:start", jobID, d.Kind)
+	err = r.runJobWork(ctx, job)
+	e := fae.Wrap(err, "running job")
+	attempt.Finish(e)
+	r.Minion.notify("job:finish", jobID, d.Kind)
+
+	d.UpdateAttempt(i, attempt)
+	err = r.Minion.db.Jobs.Save(d)
+	if err != nil {
+		return fae.Wrap(err, "updating job")
+	}
+
+	return e
 }
 
 // runJobWork runs the job's Work method, this is separate
@@ -74,50 +127,6 @@ func (r *Runner) runJobWork(ctx context.Context, job wrapped) (err error) {
 	}
 
 	return err
-}
-
-// runJob runs a job
-func (r *Runner) runJob(ctx context.Context, jobID string) (err error) {
-	r.Minion.notify("job:load", jobID, "-")
-
-	job, d, err := r.loadJob(jobID)
-	if err != nil {
-		return fae.Wrap(err, "loading job")
-	}
-
-	err = r.runJobAttempt(ctx, jobID, d, job)
-
-	if err != nil {
-		r.Minion.notify("job:fail", jobID, d.Kind)
-	} else {
-		r.Minion.notify("job:success", jobID, d.Kind)
-	}
-
-	return err
-}
-
-func (r *Runner) runJobAttempt(ctx context.Context, jobID string, d *database.Model, job wrapped) error {
-	attempt := &database.Attempt{}
-	attempt.Start()
-	i := d.AddAttempt(attempt)
-	err := r.Minion.db.Jobs.Save(d)
-	if err != nil {
-		return fae.Wrap(err, "updating job")
-	}
-
-	r.Minion.notify("job:start", jobID, d.Kind)
-	err = r.runJobWork(ctx, job)
-	e := fae.Wrap(err, "running job")
-	attempt.Finish(e)
-	r.Minion.notify("job:finish", jobID, d.Kind)
-
-	d.UpdateAttempt(i, attempt)
-	err = r.Minion.db.Jobs.Save(d)
-	if err != nil {
-		return fae.Wrap(err, "updating job")
-	}
-
-	return e
 }
 
 // WithTimeout runs a delegate function with a timeout,
