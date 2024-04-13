@@ -62,7 +62,6 @@ func (a *Attempt) Finish(err error) {
 
 	a.Status = string(StatusFailed)
 	fmt.Printf("AFTER: %#v\n", err)
-	a.Error = err.Error()
 
 	cause := fae.Cause(err)
 	if cause != nil {
