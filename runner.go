@@ -28,6 +28,30 @@ func (r *Runner) Run(ctx context.Context) {
 	}
 }
 
+// runJob runs a job
+func (r *Runner) runJob(ctx context.Context, jobID string) (err error) {
+	r.Minion.notify("job:load", jobID, "-")
+
+	job, d, err := r.loadJob(jobID)
+	if err != nil {
+		return fae.Wrap(err, "loading job")
+	}
+
+	defer func() {
+		if recovery := recover(); recovery != nil {
+			err = fae.Errorf("panic (outside of job work): %v", recovery)
+		}
+
+		if err != nil {
+			r.Minion.notify("job:fail", jobID, d.Kind)
+		} else {
+			r.Minion.notify("job:success", jobID, d.Kind)
+		}
+	}()
+
+	return r.runJobAttempt(ctx, jobID, d, job)
+}
+
 func (r *Runner) loadJob(jobID string) (wrapped, *database.Model, error) {
 	d := &database.Model{}
 	err := r.Minion.db.Jobs.Find(jobID, d)
@@ -77,30 +101,6 @@ func (r *Runner) runJobWork(ctx context.Context, job wrapped) (err error) {
 		err = job.Work(ctx)
 	}
 
-	return err
-}
-
-// runJob runs a job
-func (r *Runner) runJob(ctx context.Context, jobID string) (err error) {
-	r.Minion.notify("job:load", jobID, "-")
-	defer func() {
-		if recovery := recover(); recovery != nil {
-			err = fae.Errorf("panic: %v", recovery)
-		}
-	}()
-
-	job, d, err := r.loadJob(jobID)
-	if err != nil {
-		return fae.Wrap(err, "loading job")
-	}
-
-	err = r.runJobAttempt(ctx, jobID, d, job)
-
-	if err != nil {
-		r.Minion.notify("job:fail", jobID, d.Kind)
-	} else {
-		r.Minion.notify("job:success", jobID, d.Kind)
-	}
 	return err
 }
 
