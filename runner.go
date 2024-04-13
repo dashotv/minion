@@ -3,6 +3,7 @@ package minion
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/dashotv/fae"
@@ -39,7 +40,7 @@ func (r *Runner) runJob(ctx context.Context, jobID string) (err error) {
 
 	defer func() {
 		if recovery := recover(); recovery != nil {
-			err = fae.Errorf("panic (outside of job work): %v", recovery)
+			err = fae.Errorf("panic (outside of job work): %v\n%s", recovery, string(debug.Stack()))
 		}
 
 		if err != nil {
