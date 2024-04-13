@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/caarlos0/env/v10 v10.0.0
-	github.com/dashotv/fae v0.1.4
+	github.com/dashotv/fae v0.1.8
 	github.com/dashotv/grimoire v0.5.1
 	github.com/dotenv-org/godotenvvault v0.6.0
 	github.com/labstack/echo/v4 v4.11.4
