@@ -79,6 +79,11 @@ func (r *Runner) runJobWork(ctx context.Context, job wrapped) (err error) {
 // runJob runs a job
 func (r *Runner) runJob(ctx context.Context, jobID string) (err error) {
 	r.Minion.notify("job:load", jobID, "-")
+	defer func() {
+		if recovery := recover(); recovery != nil {
+			err = fae.Errorf("panic: %v", recovery)
+		}
+	}()
 
 	job, d, err := r.loadJob(jobID)
 	if err != nil {
@@ -92,7 +97,6 @@ func (r *Runner) runJob(ctx context.Context, jobID string) (err error) {
 	} else {
 		r.Minion.notify("job:success", jobID, d.Kind)
 	}
-
 	return err
 }
 
