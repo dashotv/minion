@@ -24,7 +24,7 @@ func (r *Runner) Run(ctx context.Context) {
 			if len(m) > 100 {
 				m = m[:97] + "..."
 			}
-			r.Minion.Log.Errorf("runner: %s", err)
+			r.Minion.Log.Errorf("runner: %s", m)
 		}
 	}
 }
