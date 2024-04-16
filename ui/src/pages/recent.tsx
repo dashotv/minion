@@ -58,10 +58,11 @@ const Recent = () => {
               <IconButton title="Show All" onClick={() => setStatus('')}>
                 <UndoIcon color="primary" />
               </IconButton>
-              {data?.stats ? <JobsStats stats={data.stats} setStatus={setStatus} /> : null}
             </Stack>
           </Grid>
-          <Grid item xs={12} md={6} justifyContent="end"></Grid>
+          <Grid item xs={12} md={6} justifyContent="end">
+            {data?.stats ? <JobsStats stats={data.stats} setStatus={setStatus} /> : null}
+          </Grid>
         </Grid>
       </Container>
       <Container>

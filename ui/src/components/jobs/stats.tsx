@@ -1,3 +1,8 @@
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import BlockIcon from '@mui/icons-material/Block';
+import CachedIcon from '@mui/icons-material/Cached';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import PendingOutlinedIcon from '@mui/icons-material/PendingOutlined';
 import { Button, Stack } from '@mui/material';
 
 import { Pill } from '@dashotv/components';
@@ -10,20 +15,20 @@ export const JobsStats = ({ stats, setStatus }: { stats: Stats; setStatus: (stat
   }
   return (
     <Stack direction="row" spacing={0} justifyContent="end">
-      <Button onClick={() => setStatus('pending')}>
-        <Pill name="Pending" color="gray" value={stats.pending || 0} />
+      <Button title="pending" onClick={() => setStatus('pending')}>
+        <Pill name="P" color="gray" value={stats.pending || 0} icon={<PendingOutlinedIcon fontSize="small" />} />
       </Button>
-      <Button onClick={() => setStatus('queued')}>
-        <Pill name="Queued" color="secondary" value={stats.queued || 0} />
+      <Button title="queued" onClick={() => setStatus('queued')}>
+        <Pill name="Q" color="secondary" value={stats.queued || 0} icon={<AccessTimeIcon fontSize="small" />} />
       </Button>
-      <Button onClick={() => setStatus('running')}>
-        <Pill name="Running" color="primary" value={stats.running || 0} />
+      <Button title="running" onClick={() => setStatus('running')}>
+        <Pill name="R" color="primary" value={stats.running || 0} icon={<CachedIcon fontSize="small" />} />
       </Button>
-      <Button onClick={() => setStatus('cancelled')}>
-        <Pill name="Cancelled" color="warning" value={stats.cancelled} />
+      <Button title="cancelled" onClick={() => setStatus('cancelled')}>
+        <Pill name="C" color="warning" value={stats.cancelled} icon={<BlockIcon fontSize="small" />} />
       </Button>
-      <Button onClick={() => setStatus('failed')}>
-        <Pill name="Failed" color="error" value={stats.failed} />
+      <Button title="failed" onClick={() => setStatus('failed')}>
+        <Pill name="F" color="error" value={stats.failed} icon={<ErrorOutlineIcon fontSize="small" />} />
       </Button>
     </Stack>
   );
