@@ -4,7 +4,6 @@ import viteTsconfigPaths from 'vite-tsconfig-paths';
 import federation from '@originjs/vite-plugin-federation';
 import react from '@vitejs/plugin-react-swc';
 
-// @ts-ignore
 import pkg from './package.json';
 
 const { dependencies } = pkg;
