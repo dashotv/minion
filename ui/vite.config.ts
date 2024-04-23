@@ -36,6 +36,7 @@ export default defineConfig({
     outDir: '../static',
   },
   server: {
+    port: 3010,
     proxy: {
       '/api/minion': {
         target: 'http://localhost:59010',
