@@ -24,6 +24,11 @@ export const deleteJob = async (id: string, hard: boolean) => {
   return response.data;
 };
 
+export const patchJob = async (id: string) => {
+  const response = await axios.patch(`/api/minion/jobs/${id}`, {});
+  return response.data;
+};
+
 export const useJobsQuery = (page: number, status: string) =>
   useQuery({
     queryKey: ['jobs', page, status],

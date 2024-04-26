@@ -12,7 +12,7 @@ import { Grid, IconButton, Stack } from '@mui/material';
 import { Container } from '@dashotv/components';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { JobsList, JobsStats, deleteJob, useJobsQuery } from 'components/jobs';
+import { JobsList, JobsStats, deleteJob, patchJob, useJobsQuery } from 'components/jobs';
 
 const Recent = () => {
   // limit, skip, queries, etc
@@ -29,6 +29,11 @@ const Recent = () => {
   const handleDelete = (id: string) => {
     console.log('delete', id);
     deleteJob(id, true);
+  };
+
+  const handleRequeue = (id: string) => {
+    console.log('delete', id);
+    patchJob(id);
   };
 
   useInterval(() => {
@@ -66,7 +71,7 @@ const Recent = () => {
         </Grid>
       </Container>
       <Container>
-        <JobsList {...{ data, handleCancel, handleDelete }} />
+        <JobsList {...{ data, handleCancel, handleDelete, handleRequeue }} />
       </Container>
     </>
   );

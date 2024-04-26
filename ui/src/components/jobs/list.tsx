@@ -10,7 +10,7 @@ import { Link, Paper, Stack, Typography } from '@mui/material';
 
 import { ButtonMap, ButtonMapButton, Chrono, Row } from '@dashotv/components';
 
-import { Job, JobsDialog } from '.';
+import { Job, JobsDialog, JobsResponse } from '.';
 
 const stringToColor = (value: string) => {
   switch (value) {
@@ -41,11 +41,12 @@ const stringToColor = (value: string) => {
 // };
 
 export interface JobsListProps {
-  data?: any;
+  data?: JobsResponse;
   handleCancel: (id: string) => void;
+  handleRequeue: (id: string) => void;
 }
 
-export function JobsList({ data, handleCancel }: JobsListProps) {
+export function JobsList({ data, handleCancel, handleRequeue }: JobsListProps) {
   const [selected, setSelected] = useState<Job | null>(null);
   const open = (job: Job) => {
     setSelected(job);
@@ -69,7 +70,7 @@ export function JobsList({ data, handleCancel }: JobsListProps) {
       {data?.results.map(job => {
         return (
           <Link key={job.id} href="#" onClick={() => open(job)}>
-            <JobRow {...{ job, handleCancel }} />
+            <JobRow {...{ job, handleCancel, handleRequeue }} />
           </Link>
         );
       })}
@@ -166,13 +167,25 @@ const Client = ({ client }: { client: string }) => {
 export function JobRow({
   job: { id, client, kind, queue, status, args, attempts },
   handleCancel,
+  handleRequeue,
 }: {
   job: Job;
   handleCancel: (id: string) => void;
+  handleRequeue: (id: string) => void;
 }) {
   const { started_at, duration, error } = (attempts && attempts.length > 0 && attempts[attempts.length - 1]) || {};
 
   const buttons: ButtonMapButton[] = [
+    {
+      Icon: CachedIcon,
+      color: 'primary',
+      click: e => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleRequeue(id);
+      },
+      title: 'cancel',
+    },
     {
       Icon: BlockIcon,
       color: 'warning',

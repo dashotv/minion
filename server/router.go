@@ -26,6 +26,7 @@ type Router struct {
 	DB   *database.Connector
 	Echo *echo.Echo
 	Log  *zap.SugaredLogger
+	Jobs *Jobs
 }
 
 // Router creates and registers the routes of the minion package
@@ -43,7 +44,7 @@ func setupRouter(s *Server) error {
 		Filesystem: http.FS(static.FS),
 	})) // https://echo.labstack.com/docs/middleware/static
 
-	r := &Router{Port: s.Config.Port, Echo: e, DB: s.DB, Log: s.Log.Named("router")}
+	r := &Router{Port: s.Config.Port, Echo: e, DB: s.DB, Log: s.Log.Named("router"), Jobs: s.Jobs}
 	e.HTTPErrorHandler = r.customHTTPErrorHandler
 
 	g := e.Group("/jobs")
@@ -204,7 +205,14 @@ func (r *Router) handleGet(c echo.Context) error {
 	return c.JSON(http.StatusNotImplemented, H{"error": "not implemented"})
 }
 func (r *Router) handlePatch(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, H{"error": "not implemented"})
+	id := c.Param("id")
+	if id == "" {
+		return fae.New("missing id")
+	}
+	if err := r.Jobs.Minion.Requeue(id); err != nil {
+		return c.JSON(http.StatusInternalServerError, H{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, H{"error": false})
 }
 func (r *Router) handleUpdate(c echo.Context) error {
 	return c.JSON(http.StatusNotImplemented, H{"error": "not implemented"})
