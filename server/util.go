@@ -55,6 +55,8 @@ func (r *Router) jobStats() (*Stats, error) {
 			stats.Failed = raw.Count
 		case "finished":
 			stats.Finished = raw.Count
+		case "archived":
+			stats.Archived = raw.Count
 		}
 	}
 	return stats, nil
@@ -72,5 +74,6 @@ type Stats struct {
 	Running   int64 `json:"running"`
 	Cancelled int64 `json:"cancelled"`
 	Failed    int64 `json:"failed"`
+	Archived  int64 `json:"archived"`
 	Finished  int64 `json:"finished"`
 }

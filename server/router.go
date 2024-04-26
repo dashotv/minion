@@ -176,13 +176,13 @@ func (r *Router) handleDelete(c echo.Context) error {
 		return c.JSON(http.StatusOK, H{"error": false})
 	} else if id == string(database.StatusFailed) && hard {
 		filter := bson.M{"status": database.StatusFailed}
-		if _, err := r.DB.Jobs.Collection.DeleteMany(context.Background(), filter); err != nil {
+		if _, err := r.DB.Jobs.Collection.UpdateMany(context.Background(), filter, bson.M{"$set": bson.M{"status": database.StatusArchived}}); err != nil {
 			return err
 		}
 		return c.JSON(http.StatusOK, H{"error": false})
 	} else if id == string(database.StatusCancelled) && hard {
 		filter := bson.M{"status": database.StatusCancelled}
-		if _, err := r.DB.Jobs.Collection.DeleteMany(context.Background(), filter); err != nil {
+		if _, err := r.DB.Jobs.Collection.UpdateMany(context.Background(), filter, bson.M{"$set": bson.M{"status": database.StatusArchived}}); err != nil {
 			return err
 		}
 		return c.JSON(http.StatusOK, H{"error": false})

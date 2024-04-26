@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import ArchiveIcon from '@mui/icons-material/Archive';
 import BlockIcon from '@mui/icons-material/Block';
 import CachedIcon from '@mui/icons-material/Cached';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -80,42 +81,10 @@ export function JobsList({ data, handleCancel, handleRequeue }: JobsListProps) {
   );
 }
 
-// const JobsListSection = ({
-//   jobs,
-//   status,
-//   open,
-//   handleCancel,
-// }: {
-//   jobs?: Job[];
-//   status: string;
-//   open: (job: Job) => void;
-//   handleCancel: (id: string) => void;
-// }) => {
-//   return (
-//     <Paper elevation={0} sx={{ minHeight: "75px", mb: 2 }}>
-//       <Stack direction="row" spacing={1} alignItems="center">
-//         <Icon status={status} />
-//         <Typography color="primary" fontWeight="bolder">
-//           {status.charAt(0).toUpperCase() + status.slice(1)}
-//         </Typography>
-//       </Stack>
-//       {(!jobs || jobs?.length === 0) && (
-//         <Typography color="gray" variant="caption">
-//           No jobs
-//         </Typography>
-//       )}
-//       {jobs?.map((job) => {
-//         return (
-//           <Link key={job.id} href="#" onClick={() => open(job)}>
-//             <JobRow {...{ job, handleCancel }} />
-//           </Link>
-//         );
-//       })}
-//     </Paper>
-//   );
-// };
 const Icon = ({ status }: { status: string }) => {
   switch (status) {
+    case 'archived':
+      return <ArchiveIcon fontSize="small" color="disabled" />;
     case 'failed':
       return <ErrorIcon fontSize="small" color="error" />;
     case 'finished':

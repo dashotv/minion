@@ -9,4 +9,5 @@ const (
 	StatusFailed    Status = "failed"
 	StatusFinished  Status = "finished"
 	StatusCancelled Status = "cancelled"
+	StatusArchived  Status = "archived"
 )
