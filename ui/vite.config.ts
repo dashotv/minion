@@ -38,7 +38,7 @@ export default defineConfig({
     port: 3010,
     proxy: {
       '/api/minion': {
-        target: 'http://localhost:59010',
+        target: 'http://host.docker.internal:59010',
         changeOrigin: true,
         secure: false,
         ws: true,

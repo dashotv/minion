@@ -31,4 +31,5 @@ export interface Stats {
   running: number;
   cancelled: number;
   failed: number;
+  archived: number;
 }
