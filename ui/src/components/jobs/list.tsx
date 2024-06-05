@@ -25,6 +25,8 @@ const stringToColor = (value: string) => {
       return '#ff9800';
     case 'scry':
       return '#9c27b0';
+    case 'arcane':
+      return '#A020F0';
     case 'minion':
       // return "#ff5722";
       return '#FFFFFF';
