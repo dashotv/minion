@@ -14,8 +14,8 @@ type stackTracer interface {
 type Model struct {
 	grimoire.Document `bson:",inline"` // includes default model settings
 	//ID        primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at" grimoire:"index"`
-	UpdatedAt time.Time `json:"updated_at" bson:"updated_at" grimoire:"index"`
+	// CreatedAt time.Time `json:"created_at" bson:"created_at" grimoire:"index"`
+	// UpdatedAt time.Time `json:"updated_at" bson:"updated_at" grimoire:"index"`
 
 	Client string `bson:"client" json:"client" grimoire:"index"`
 	Kind   string `bson:"kind" json:"kind" grimoire:"index"`

@@ -18,7 +18,8 @@ func New(uri, db, collection string) (*Connector, error) {
 	if err != nil {
 		return nil, fae.Wrap(err, "creating job store")
 	}
-	grimoire.Indexes(con, &Model{})
+	grimoire.CreateIndexes(con, &Model{}, "created_at;updated_at")
+	grimoire.CreateIndexesFromTags(con, &Model{})
 
 	return &Connector{Jobs: con}, nil
 }
