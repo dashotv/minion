@@ -117,13 +117,16 @@ func (r *Runner) runJobWork(ctx context.Context, job wrapped) (err error) {
 		t = job.Timeout()
 	}
 
+	timeoutCtx, timeout := context.WithTimeout(ctx, t)
+	defer timeout()
+
 	select {
-	case <-time.After(t):
+	case <-timeoutCtx.Done():
 		err = fae.Errorf("timeout")
 	case <-ctx.Done():
 		return fae.Errorf("cancelled")
 	default:
-		err = job.Work(ctx)
+		err = job.Work(timeoutCtx)
 	}
 
 	return err
