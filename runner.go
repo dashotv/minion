@@ -123,8 +123,10 @@ func (r *Runner) runJobWork(ctx context.Context, job wrapped) (err error) {
 	select {
 	case <-timeoutCtx.Done():
 		err = fae.Errorf("timeout")
+		return
 	case <-ctx.Done():
-		return fae.Errorf("cancelled")
+		err = fae.Errorf("cancelled")
+		return
 	default:
 		err = job.Work(timeoutCtx)
 	}
