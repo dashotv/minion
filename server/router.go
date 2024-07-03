@@ -8,6 +8,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"go.elastic.co/apm/module/apmechov4/v2"
 	"go.infratographer.com/x/echox/echozap"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/zap"
@@ -43,6 +44,7 @@ func setupRouter(s *Server) error {
 		HTML5:      true,
 		Filesystem: http.FS(static.FS),
 	})) // https://echo.labstack.com/docs/middleware/static
+	e.Use(apmechov4.Middleware())
 
 	r := &Router{Port: s.Config.Port, Echo: e, DB: s.DB, Log: s.Log.Named("router"), Jobs: s.Jobs}
 	e.HTTPErrorHandler = r.customHTTPErrorHandler
