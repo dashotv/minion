@@ -8,6 +8,11 @@ import (
 )
 
 func (m *Minion) Enqueue(in Payload) error {
+	_, err := m.EnqueueID(in)
+	return err
+}
+
+func (m *Minion) EnqueueID(in Payload) (string, error) {
 	queue := "default"
 
 	reg := m.workers[in.Kind()]
@@ -15,7 +20,7 @@ func (m *Minion) Enqueue(in Payload) error {
 		queue = reg.queue
 	}
 
-	return m.enqueueTo(queue, in)
+	return m.enqueueToID(queue, in)
 }
 
 func (m *Minion) Requeue(jobID string) error {
@@ -36,13 +41,18 @@ func (m *Minion) Requeue(jobID string) error {
 }
 
 func (m *Minion) enqueueTo(queue string, in Payload) error {
+	_, err := m.enqueueToID(queue, in)
+	return err
+}
+
+func (m *Minion) enqueueToID(queue string, in Payload) (string, error) {
 	if in == nil {
-		return fae.New("payload is nil")
+		return "", fae.New("payload is nil")
 	}
 
 	args, err := json.Marshal(in)
 	if err != nil {
-		return fae.Wrap(err, "marshaling job args")
+		return "", fae.Wrap(err, "marshaling job args")
 	}
 
 	data := &database.Model{
@@ -55,9 +65,9 @@ func (m *Minion) enqueueTo(queue string, in Payload) error {
 
 	err = m.db.Jobs.Save(data)
 	if err != nil {
-		return fae.Wrap(err, "creating job")
+		return "", fae.Wrap(err, "creating job")
 	}
 
 	m.notify("job:created", data.ID.Hex(), data.Kind)
-	return nil
+	return data.ID.Hex(), nil
 }
