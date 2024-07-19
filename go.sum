@@ -9,6 +9,8 @@ github.com/caarlos0/env/v10 v10.0.0 h1:yIHUBZGsyqCnpTkbjk8asUlx6RFhhEs+h7TOBdgdz
 github.com/caarlos0/env/v10 v10.0.0/go.mod h1:ZfulV76NvVPw3tm591U4SwL3Xx9ldzBP9aGxzeN7G18=
 github.com/dashotv/fae v0.1.9 h1:tB4ECFDSGTTF5fJF9xegUyAgGiT5dZGgeeiVfvZaGwE=
 github.com/dashotv/fae v0.1.9/go.mod h1:+deep7H052Bz6GxW7HXiel4S+Rqkva1mPETS+3tQOVU=
+github.com/dashotv/fae v0.1.10 h1:DzlnrUuBH1Bb+t6uErgCxuEdlUnIitY/hf0O6op7kMQ=
+github.com/dashotv/fae v0.1.10/go.mod h1:+deep7H052Bz6GxW7HXiel4S+Rqkva1mPETS+3tQOVU=
 github.com/dashotv/grimoire v0.5.7 h1:CaWNHPUovM7Mh3lCFG/+PH2AUVmSI+tLZ8tjUDeFDJw=
 github.com/dashotv/grimoire v0.5.7/go.mod h1:oeSS1+bBA0ip8ULTaqX6tAnkxqNDg7NF7+mwwiByM3M=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
