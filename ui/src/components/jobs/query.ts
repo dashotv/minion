@@ -2,16 +2,20 @@ import axios from 'axios';
 
 import { useQuery } from '@tanstack/react-query';
 
-import { JobsResponse } from './types';
+import { JobsResponse, Stats } from './types';
 
 export const getJobsFor = async (id: string, page: number) => {
   const response = await axios.get(`/api/minion/jobs/?page=${page}&client=${id}`);
   return response.data.jobs as JobsResponse;
 };
 
-export const getJobs = async (page: number, status: string) => {
-  const response = await axios.get(`/api/minion/jobs?limit=250&page=${page}&status=${status}`);
+export const getJobs = async (page: number, status: string, client: string) => {
+  const response = await axios.get(`/api/minion/jobs?limit=100&page=${page}&status=${status}&client=${client}`);
   return response.data as JobsResponse;
+};
+export const getJobStats = async () => {
+  const response = await axios.get(`/api/minion/jobs?limit=1`);
+  return response.data.stats as Stats;
 };
 
 export const queueJob = async (name: string, client: string) => {
@@ -29,10 +33,18 @@ export const patchJob = async (id: string) => {
   return response.data;
 };
 
-export const useJobsQuery = (page: number, status: string) =>
+export const useJobsStatsQuery = () =>
+  useQuery({
+    queryKey: ['jobs', 'stats'],
+    queryFn: () => getJobStats(),
+    placeholderData: previousData => previousData,
+    retry: false,
+  });
+
+export const useJobsQuery = (page: number, status: string, client: string) =>
   useQuery({
     queryKey: ['jobs', page, status],
-    queryFn: () => getJobs(page, status),
+    queryFn: () => getJobs(page, status, client),
     placeholderData: previousData => previousData,
     retry: false,
   });

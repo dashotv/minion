@@ -115,6 +115,7 @@ func (r *Router) Stop() error {
 func (r *Router) handleList(c echo.Context) error {
 	page := QueryParamInt(c, "page", 1)
 	limit := QueryParamInt(c, "limit", pagesize)
+	client := c.QueryParam("client")
 	skip := (page - 1) * limit
 	status := c.QueryParam("status")
 
@@ -125,6 +126,9 @@ func (r *Router) handleList(c echo.Context) error {
 
 	q := r.DB.Jobs.Query().Limit(limit).Skip(skip).Desc("created_at")
 
+	if client != "" {
+		q = q.Where("client", client)
+	}
 	if status != "" {
 		q = q.Where("status", status)
 	}

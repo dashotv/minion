@@ -7,11 +7,11 @@ import CachedIcon from '@mui/icons-material/Cached';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import PendingIcon from '@mui/icons-material/Pending';
-import { Link, Paper, Stack, Typography } from '@mui/material';
+import { Grid, IconButton, Link, Paper, Stack, Typography } from '@mui/material';
 
-import { ButtonMap, ButtonMapButton, Chrono, Row } from '@dashotv/components';
+import { ButtonMap, ButtonMapButton, Chrono, Container, Pagination, Row } from '@dashotv/components';
 
-import { Job, JobsDialog, JobsResponse } from '.';
+import { Job, JobsDialog, JobsResponse, deleteJob, patchJob, useJobsQuery } from '.';
 
 const stringToColor = (value: string) => {
   switch (value) {
@@ -42,6 +42,63 @@ const stringToColor = (value: string) => {
 //
 //   return `hsl(${hash % 360}, 100%, 65%)`;
 // };
+const pagesize = 100;
+export function Jobs({ client, status }: { client: string; status: string }) {
+  const [page, setPage] = useState(1);
+  const { data } = useJobsQuery(page, status, client);
+  const [total] = useState(status !== '' ? data?.stats[status] : data?.stats?.total || 0);
+
+  const handleChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
+
+  const handleCancel = (id: string) => {
+    console.log('cancel', id);
+    deleteJob(id, false);
+  };
+
+  const handleDelete = (id: string) => {
+    console.log('delete', id);
+    deleteJob(id, true);
+  };
+
+  const handleRequeue = (id: string) => {
+    console.log('delete', id);
+    patchJob(id);
+  };
+
+  return (
+    <>
+      <Container>
+        <Grid container spacing={0} sx={{ mb: 2 }}>
+          <Grid item xs={12} md={6}>
+            <Stack direction="row" spacing={0} alignItems="center">
+              <IconButton title="Cancel Pending" onClick={() => handleCancel('pending')}>
+                <PendingIcon color="disabled" />
+              </IconButton>
+              <IconButton title="Delete Cancelled" onClick={() => handleDelete('cancelled')}>
+                <BlockIcon color="warning" />
+              </IconButton>
+              <IconButton title="Delete Failed" onClick={() => handleDelete('failed')}>
+                <ErrorIcon color="error" />
+              </IconButton>
+            </Stack>
+          </Grid>
+          <Grid item xs={12} md={6} justifyContent="end">
+            <Pagination
+              total={total}
+              boundaryCount={0}
+              page={page}
+              count={Math.ceil(total / pagesize)}
+              onChange={handleChange}
+            />
+          </Grid>
+        </Grid>
+      </Container>
+      <JobsList data={data} handleCancel={handleCancel} handleRequeue={handleRequeue} />
+    </>
+  );
+}
 
 export interface JobsListProps {
   data?: JobsResponse;
