@@ -74,7 +74,7 @@ func (j *Jobs) jobs_cleanup() error {
 		return fae.Errorf("cleaning up finished jobs: %w", err)
 	}
 
-	_, err = j.DB.Jobs.Collection.DeleteMany(context.Background(), bson.M{"status": database.StatusFailed, "updated_at": bson.M{"$lt": time.Now().Add(-time.Hour * time.Duration(j.keepFailed))}})
+	_, err = j.DB.Jobs.Collection.DeleteMany(context.Background(), bson.M{"updated_at": bson.M{"$lt": time.Now().Add(-time.Hour * time.Duration(j.keepFailed))}})
 	if err != nil {
 		return fae.Errorf("cleaning up failed jobs: %w", err)
 	}
